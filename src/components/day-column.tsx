@@ -1,0 +1,108 @@
+"use client";
+
+import { useState } from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { ItineraryDay } from "@/types/itinerary";
+import { RouteLeg } from "@/components/map/day-route";
+import { StopCard } from "@/components/stop-card";
+import { TravelTimeBadge } from "@/components/travel-time-badge";
+import { useItinerary } from "@/store/itinerary-context";
+
+interface DayColumnProps {
+  day: ItineraryDay;
+  isFocused: boolean;
+  legs: RouteLeg[];
+  canRemove: boolean;
+}
+
+export function DayColumn({ day, isFocused, legs, canRemove }: DayColumnProps) {
+  const { dispatch, readOnly } = useItinerary();
+  const { setNodeRef } = useDroppable({ id: `day:${day.id}` });
+  const [editingLabel, setEditingLabel] = useState(false);
+  const [labelDraft, setLabelDraft] = useState(day.label);
+
+  return (
+    <section
+      className={`flex min-h-0 w-72 flex-shrink-0 flex-col rounded-xl border p-3 ${
+        isFocused ? "border-blue-400 bg-blue-50/40" : "border-neutral-200 bg-neutral-50"
+      }`}
+    >
+      <header className="mb-2 flex items-center justify-between gap-2">
+        {editingLabel ? (
+          <input
+            autoFocus
+            value={labelDraft}
+            onChange={(e) => setLabelDraft(e.target.value)}
+            onBlur={() => {
+              setEditingLabel(false);
+              dispatch({ type: "RENAME_DAY", dayId: day.id, label: labelDraft || day.label });
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") e.currentTarget.blur();
+            }}
+            className="w-28 rounded border border-neutral-300 px-1 text-sm font-semibold"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => !readOnly && setEditingLabel(true)}
+            className="text-sm font-semibold text-neutral-800"
+          >
+            {day.label}
+          </button>
+        )}
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => dispatch({ type: "SET_FOCUSED_DAY", dayId: day.id })}
+            className={`rounded px-2 py-0.5 text-xs ${
+              isFocused
+                ? "bg-blue-600 text-white"
+                : "bg-white text-neutral-600 hover:bg-neutral-100"
+            }`}
+          >
+            {isFocused ? "On map" : "Show on map"}
+          </button>
+          {!readOnly && canRemove && (
+            <button
+              type="button"
+              onClick={() => dispatch({ type: "REMOVE_DAY", dayId: day.id })}
+              aria-label="Remove day"
+              className="text-neutral-400 hover:text-red-500"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </header>
+
+      <div
+        ref={setNodeRef}
+        className="flex min-h-[3rem] flex-1 flex-col gap-2 overflow-y-auto"
+      >
+        <SortableContext items={day.stops.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+          {day.stops.length === 0 && (
+            <p className="rounded-lg border border-dashed border-neutral-300 p-3 text-center text-xs text-neutral-400">
+              No stops yet. Search above to add a place.
+            </p>
+          )}
+          {day.stops.map((stop, index) => (
+            <div key={stop.id}>
+              <StopCard
+                stop={stop}
+                index={index}
+                readOnly={readOnly}
+                onRemove={() =>
+                  dispatch({ type: "REMOVE_STOP", dayId: day.id, stopId: stop.id })
+                }
+              />
+              {isFocused && legs[index] && <TravelTimeBadge leg={legs[index]} />}
+            </div>
+          ))}
+        </SortableContext>
+      </div>
+    </section>
+  );
+}
