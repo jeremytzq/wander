@@ -16,14 +16,12 @@ export function AppShell() {
       <GoogleMapsProvider>
         <div className="flex h-dvh flex-col">
           <SaveShareBar />
-          <div className="flex min-h-0 flex-1">
-            <aside className="flex min-h-0 w-[420px] flex-shrink-0 flex-col border-r border-neutral-200 bg-white p-4">
-              <ItineraryPanel legs={legs} />
-            </aside>
-            <main className="min-w-0 flex-1">
-              <MapView onLegsChange={setLegs} />
-            </main>
-          </div>
+          <section className="flex h-[380px] flex-shrink-0 flex-col border-b border-neutral-200 bg-white p-4">
+            <ItineraryPanel legs={legs} />
+          </section>
+          <main className="min-h-0 flex-1">
+            <MapView onLegsChange={setLegs} />
+          </main>
         </div>
       </GoogleMapsProvider>
     </ItineraryProvider>
