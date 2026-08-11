@@ -12,6 +12,7 @@ import {
   ItineraryDay,
   PlaceStop,
   createEmptyItinerary,
+  toDateInputValue,
 } from "@/types/itinerary";
 import {
   decodeItineraryFromShare,
@@ -38,7 +39,8 @@ type Action =
       toIndex: number;
     }
   | { type: "UPDATE_STOP_NOTES"; dayId: string; stopId: string; notes: string }
-  | { type: "SET_FOCUSED_DAY"; dayId: string | null };
+  | { type: "SET_FOCUSED_DAY"; dayId: string | null }
+  | { type: "SET_START_DATE"; startDate: string };
 
 interface State {
   itinerary: Itinerary;
@@ -52,12 +54,14 @@ function touch(it: Itinerary): Itinerary {
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
-    case "SET_ITINERARY":
+    case "SET_ITINERARY": {
+      const itinerary = normalize(action.itinerary);
       return {
-        itinerary: action.itinerary,
+        itinerary,
         readOnly: !!action.readOnly,
-        focusedDayId: action.itinerary.days[0]?.id ?? null,
+        focusedDayId: itinerary.days[0]?.id ?? null,
       };
+    }
     case "TAKE_OWNERSHIP":
       return {
         ...state,
@@ -70,6 +74,11 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         itinerary: touch({ ...state.itinerary, name: action.name }),
+      };
+    case "SET_START_DATE":
+      return {
+        ...state,
+        itinerary: touch({ ...state.itinerary, startDate: action.startDate }),
       };
     case "ADD_DAY": {
       const day: ItineraryDay = {
@@ -177,8 +186,20 @@ interface ItineraryContextValue extends State {
 
 const ItineraryContext = createContext<ItineraryContextValue | null>(null);
 
+// Fills in `startDate` for itineraries saved/shared before that field existed.
+function normalize(itinerary: Itinerary): Itinerary {
+  return itinerary.startDate
+    ? itinerary
+    : { ...itinerary, startDate: toDateInputValue(new Date()) };
+}
+
 function withFocus(itinerary: Itinerary, readOnly: boolean): State {
-  return { itinerary, readOnly, focusedDayId: itinerary.days[0]?.id ?? null };
+  const normalized = normalize(itinerary);
+  return {
+    itinerary: normalized,
+    readOnly,
+    focusedDayId: normalized.days[0]?.id ?? null,
+  };
 }
 
 // Runs only in the browser: AppShell (and this provider) is loaded with

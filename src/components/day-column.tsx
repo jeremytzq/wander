@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { ItineraryDay } from "@/types/itinerary";
+import {
+  ItineraryDay,
+  addDaysToDateString,
+  formatDayDate,
+} from "@/types/itinerary";
 import { RouteLeg } from "@/components/map/day-route";
 import { StopCard } from "@/components/stop-card";
 import { TravelTimeBadge } from "@/components/travel-time-badge";
@@ -11,16 +15,26 @@ import { useItinerary } from "@/store/itinerary-context";
 
 interface DayColumnProps {
   day: ItineraryDay;
+  dayIndex: number;
+  startDate: string;
   isFocused: boolean;
   legs: RouteLeg[];
   canRemove: boolean;
 }
 
-export function DayColumn({ day, isFocused, legs, canRemove }: DayColumnProps) {
+export function DayColumn({
+  day,
+  dayIndex,
+  startDate,
+  isFocused,
+  legs,
+  canRemove,
+}: DayColumnProps) {
   const { dispatch, readOnly } = useItinerary();
   const { setNodeRef } = useDroppable({ id: `day:${day.id}` });
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(day.label);
+  const dateLabel = formatDayDate(addDaysToDateString(startDate, dayIndex));
 
   return (
     <section
@@ -47,9 +61,14 @@ export function DayColumn({ day, isFocused, legs, canRemove }: DayColumnProps) {
           <button
             type="button"
             onClick={() => !readOnly && setEditingLabel(true)}
-            className="text-sm font-semibold text-neutral-800"
+            className="flex min-w-0 items-baseline gap-1.5 text-left"
           >
-            {day.label}
+            <span className="truncate text-sm font-semibold text-neutral-800">
+              {day.label}
+            </span>
+            <span className="flex-shrink-0 text-xs font-normal text-neutral-400">
+              {dateLabel}
+            </span>
           </button>
         )}
 

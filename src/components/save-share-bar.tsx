@@ -59,6 +59,21 @@ export function SaveShareBar() {
         className="min-w-0 flex-1 rounded border border-transparent px-2 py-1 text-lg font-semibold hover:border-neutral-200 focus:border-blue-400 focus:outline-none disabled:bg-transparent"
       />
 
+      <label className="flex items-center gap-1.5 text-sm text-neutral-500">
+        Starts
+        <input
+          type="date"
+          value={itinerary.startDate}
+          disabled={readOnly}
+          onChange={(e) => {
+            if (e.target.value) {
+              dispatch({ type: "SET_START_DATE", startDate: e.target.value });
+            }
+          }}
+          className="rounded border border-neutral-300 px-2 py-1 text-sm disabled:bg-neutral-100"
+        />
+      </label>
+
       {readOnly ? (
         <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 text-sm text-amber-800">
           Viewing a shared itinerary

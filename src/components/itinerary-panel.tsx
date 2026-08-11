@@ -106,10 +106,12 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
         onDragEnd={handleDragEnd}
       >
         <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
-          {itinerary.days.map((day) => (
+          {itinerary.days.map((day, dayIndex) => (
             <DayColumn
               key={day.id}
               day={day}
+              dayIndex={dayIndex}
+              startDate={itinerary.startDate}
               isFocused={day.id === focusedDayId}
               legs={day.id === focusedDayId ? legs : []}
               canRemove={itinerary.days.length > 1}
