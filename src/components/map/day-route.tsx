@@ -11,13 +11,11 @@ export interface RouteLeg {
 
 interface DayRouteProps {
   stops: PlaceStop[];
-  /** Matches the focused day's country color; defaults to blue. */
-  color?: string;
   onLegsChange?: (legs: RouteLeg[]) => void;
 }
 
 /** Draws a driving route through a day's stops in order, and reports leg durations. */
-export function DayRoute({ stops, color = "#2563eb", onLegsChange }: DayRouteProps) {
+export function DayRoute({ stops, onLegsChange }: DayRouteProps) {
   const map = useMap();
   const routesLibrary = useMapsLibrary("routes");
   const directionsServiceRef = useRef<google.maps.DirectionsService>(null);
@@ -29,12 +27,12 @@ export function DayRoute({ stops, color = "#2563eb", onLegsChange }: DayRoutePro
       map,
       suppressMarkers: true,
       preserveViewport: true,
-      polylineOptions: { strokeColor: color, strokeWeight: 4 },
+      polylineOptions: { strokeColor: "#2563eb", strokeWeight: 4 },
     });
     directionsServiceRef.current = new routesLibrary.DirectionsService();
     directionsRendererRef.current = renderer;
     return () => renderer.setMap(null);
-  }, [routesLibrary, map, color]);
+  }, [routesLibrary, map]);
 
   useEffect(() => {
     const directionsService = directionsServiceRef.current;
@@ -80,7 +78,7 @@ export function DayRoute({ stops, color = "#2563eb", onLegsChange }: DayRoutePro
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routesLibrary, map, color, JSON.stringify(stops.map((s) => s.id))]);
+  }, [routesLibrary, map, JSON.stringify(stops.map((s) => s.id))]);
 
   return null;
 }

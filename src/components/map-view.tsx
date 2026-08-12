@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { Map, useMap } from "@vis.gl/react-google-maps";
 import { MapPinned } from "lucide-react";
 import { useItinerary } from "@/store/itinerary-context";
@@ -8,7 +8,6 @@ import { ClassicMarker } from "@/components/map/classic-marker";
 import { DayRoute, RouteLeg } from "@/components/map/day-route";
 import { hasGoogleMapsApiKey } from "@/components/map/google-maps-provider";
 import { createNumberedPinIcon } from "@/components/map/pin-icon";
-import { buildCountryColorMap, colorForStop } from "@/lib/country-colors";
 
 const DEFAULT_CENTER = { lat: 20, lng: 0 };
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID;
@@ -57,17 +56,10 @@ export function MapView({ onLegsChange }: MapViewProps) {
 function MapContent({ onLegsChange }: MapViewProps) {
   const map = useMap();
   const { itinerary, focusedDayId } = useItinerary();
-  const countryColors = useMemo(
-    () => buildCountryColorMap(itinerary),
-    [itinerary]
-  );
 
   const allStops = itinerary.days.flatMap((d) => d.stops);
   const focusedDay =
     itinerary.days.find((d) => d.id === focusedDayId) ?? itinerary.days[0];
-  const routeColor = focusedDay?.stops[0]
-    ? colorForStop(countryColors, focusedDay.stops[0])
-    : undefined;
   // Zoom to whatever day is focused; fall back to the whole trip if it has
   // no stops yet so the view doesn't collapse to the empty default.
   const zoomTargetStops = focusedDay?.stops.length ? focusedDay.stops : allStops;
@@ -93,21 +85,13 @@ function MapContent({ onLegsChange }: MapViewProps) {
           <ClassicMarker
             key={stop.id}
             position={{ lat: stop.lat, lng: stop.lng }}
-            icon={createNumberedPinIcon(
-              stopIndex + 1,
-              day.id === focusedDayId,
-              colorForStop(countryColors, stop)
-            )}
+            icon={createNumberedPinIcon(stopIndex + 1, day.id === focusedDayId)}
             title={`Day ${dayIndex + 1}: ${stop.name}`}
           />
         ))
       )}
       {focusedDay && (
-        <DayRoute
-          stops={focusedDay.stops}
-          color={routeColor}
-          onLegsChange={onLegsChange}
-        />
+        <DayRoute stops={focusedDay.stops} onLegsChange={onLegsChange} />
       )}
     </>
   );
