@@ -1,3 +1,4 @@
+import LZString from "lz-string";
 import { Itinerary } from "@/types/itinerary";
 
 const ITINERARIES_KEY = "wander:itineraries";
@@ -51,21 +52,39 @@ export function getItinerary(id: string): Itinerary | null {
   return readAll()[id] ?? null;
 }
 
-/** Encodes an itinerary into a URL-safe base64 string for shareable links. */
+// Google Places photo URLs are ~1KB each (and embed the API key), so a trip
+// with many photographed stops can blow the share link past any browser or
+// server's URL length limit. Photos aren't essential to a shared itinerary
+// (name/address/rating/pin still show), so they're dropped before encoding.
+function stripPhotosForSharing(itinerary: Itinerary): Itinerary {
+  return {
+    ...itinerary,
+    days: itinerary.days.map((day) => ({
+      ...day,
+      stops: day.stops.map((stop) => ({
+        id: stop.id,
+        placeId: stop.placeId,
+        name: stop.name,
+        address: stop.address,
+        lat: stop.lat,
+        lng: stop.lng,
+        rating: stop.rating,
+        notes: stop.notes,
+      })),
+    })),
+  };
+}
+
+/** Encodes an itinerary into a URL-safe, compressed string for shareable links. */
 export function encodeItineraryForShare(itinerary: Itinerary): string {
-  const json = JSON.stringify(itinerary);
-  const base64 = btoa(unescape(encodeURIComponent(json)));
-  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const json = JSON.stringify(stripPhotosForSharing(itinerary));
+  return LZString.compressToEncodedURIComponent(json);
 }
 
 export function decodeItineraryFromShare(encoded: string): Itinerary | null {
   try {
-    const base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = base64.padEnd(
-      base64.length + ((4 - (base64.length % 4)) % 4),
-      "="
-    );
-    const json = decodeURIComponent(escape(atob(padded)));
+    const json = LZString.decompressFromEncodedURIComponent(encoded);
+    if (!json) return null;
     return JSON.parse(json) as Itinerary;
   } catch {
     return null;
