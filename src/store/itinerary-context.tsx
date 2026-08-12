@@ -47,6 +47,11 @@ type Action =
       dayId: string;
       country: string | null;
       color: string | null;
+    }
+  | {
+      type: "SET_DAY_ACCOMMODATION";
+      dayId: string;
+      accommodation: Omit<PlaceStop, "id"> | null;
     };
 
 interface State {
@@ -128,6 +133,19 @@ function reducer(state: State, action: Action): State {
               ...d,
               country: action.country ?? undefined,
               color: action.color ?? undefined,
+            }
+          : d
+      );
+      return { ...state, itinerary: touch({ ...state.itinerary, days }) };
+    }
+    case "SET_DAY_ACCOMMODATION": {
+      const days = state.itinerary.days.map((d) =>
+        d.id === action.dayId
+          ? {
+              ...d,
+              accommodation: action.accommodation
+                ? { id: crypto.randomUUID(), ...action.accommodation }
+                : undefined,
             }
           : d
       );

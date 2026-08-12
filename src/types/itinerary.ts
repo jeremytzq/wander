@@ -41,6 +41,8 @@ export interface ItineraryDay {
   country?: string;
   /** Manually set hex color; overrides the palette color for `country`. */
   color?: string;
+  /** Where you're staying that night, shown pinned at the bottom of the card. */
+  accommodation?: PlaceStop;
 }
 
 export interface Itinerary {

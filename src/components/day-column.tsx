@@ -18,6 +18,7 @@ import { RouteLeg } from "@/components/map/day-route";
 import { StopCard } from "@/components/stop-card";
 import { TravelTimeBadge } from "@/components/travel-time-badge";
 import { DayCountryPicker } from "@/components/day-country-picker";
+import { AccommodationCard } from "@/components/accommodation-card";
 import { useItinerary } from "@/store/itinerary-context";
 import { colorForDay, resolveDayCountry } from "@/lib/country-colors";
 import { describeHoursForDay } from "@/lib/opening-hours";
@@ -206,6 +207,10 @@ export function DayColumn({
             </div>
           ))}
         </SortableContext>
+      </div>
+
+      <div className="mt-2 flex-shrink-0">
+        <AccommodationCard day={day} readOnly={readOnly} />
       </div>
     </section>
   );
