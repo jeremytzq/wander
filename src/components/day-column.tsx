@@ -8,7 +8,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MapPin, MapPinned, X } from "lucide-react";
+import { AlertTriangle, GripVertical, MapPin, MapPinned, X } from "lucide-react";
 import {
   ItineraryDay,
   addDaysToDateString,
@@ -20,6 +20,7 @@ import { TravelTimeBadge } from "@/components/travel-time-badge";
 import { DayCountryPicker } from "@/components/day-country-picker";
 import { useItinerary } from "@/store/itinerary-context";
 import { colorForDay, resolveDayCountry } from "@/lib/country-colors";
+import { describeHoursForDay } from "@/lib/opening-hours";
 
 interface DayColumnProps {
   day: ItineraryDay;
@@ -54,10 +55,15 @@ export function DayColumn({
   } = useSortable({ id: day.id, data: { type: "day" }, disabled: readOnly });
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(day.label);
-  const dateLabel = formatDayDate(addDaysToDateString(startDate, dayIndex));
+  const dayDate = addDaysToDateString(startDate, dayIndex);
+  const weekday = dayDate.getDay();
+  const dateLabel = formatDayDate(dayDate);
 
   const dayColor = colorForDay(countryColors, day);
   const dayCountry = resolveDayCountry(day);
+  const closedCount = day.stops.filter(
+    (s) => describeHoursForDay(s.openingHours, weekday).status === "closed"
+  ).length;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -150,7 +156,7 @@ export function DayColumn({
         </div>
       </header>
 
-      <div className="mb-2">
+      <div className="mb-2 flex items-center justify-between gap-2">
         <DayCountryPicker
           day={day}
           color={dayColor}
@@ -158,6 +164,12 @@ export function DayColumn({
           existingCountries={existingCountries}
           readOnly={readOnly}
         />
+        {closedCount > 0 && (
+          <span className="flex flex-shrink-0 items-center gap-1 rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600 ring-1 ring-red-200">
+            <AlertTriangle className="h-3 w-3" />
+            {closedCount} closed
+          </span>
+        )}
       </div>
 
       <div
@@ -182,6 +194,7 @@ export function DayColumn({
                 index={index}
                 isFocused={isFocused}
                 color={dayColor}
+                weekday={weekday}
                 readOnly={readOnly}
                 onRemove={() =>
                   dispatch({ type: "REMOVE_STOP", dayId: day.id, stopId: stop.id })

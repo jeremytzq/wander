@@ -5,6 +5,7 @@ import { useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Search } from "lucide-react";
 import { PlaceStop } from "@/types/itinerary";
 import { hasGoogleMapsApiKey } from "@/components/map/google-maps-provider";
+import { parseOpeningHours } from "@/lib/opening-hours";
 
 interface PlaceSearchProps {
   onPlaceSelected: (place: Omit<PlaceStop, "id">) => void;
@@ -50,6 +51,7 @@ function PlaceAutocompleteInput({ onPlaceSelected, disabled }: PlaceSearchProps)
         "photos",
         "rating",
         "address_components",
+        "opening_hours",
       ],
     });
 
@@ -69,6 +71,7 @@ function PlaceAutocompleteInput({ onPlaceSelected, disabled }: PlaceSearchProps)
         rating: place.rating,
         country: countryComponent?.long_name,
         countryCode: countryComponent?.short_name,
+        openingHours: parseOpeningHours(place.opening_hours),
       });
       if (inputRef.current) inputRef.current.value = "";
     });

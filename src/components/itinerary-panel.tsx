@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -14,13 +14,14 @@ import {
   arrayMove,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { MapPin, Plus } from "lucide-react";
+import { AlertTriangle, MapPin, Plus, X } from "lucide-react";
 import { useItinerary } from "@/store/itinerary-context";
 import { DayColumn } from "@/components/day-column";
 import { PlaceSearch } from "@/components/place-search";
 import { RouteLeg } from "@/components/map/day-route";
-import { PlaceStop } from "@/types/itinerary";
+import { PlaceStop, addDaysToDateString } from "@/types/itinerary";
 import { buildCountryColorMap, buildDayLegend } from "@/lib/country-colors";
+import { WEEKDAY_NAMES, describeHoursForDay } from "@/lib/opening-hours";
 
 interface ItineraryPanelProps {
   legs: RouteLeg[];
@@ -46,14 +47,29 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
 
   const focusedDay =
     itinerary.days.find((d) => d.id === focusedDayId) ?? itinerary.days[0];
+  const [closureWarning, setClosureWarning] = useState<string | null>(null);
 
   const handleAddPlace = useCallback(
     (place: Omit<PlaceStop, "id">) => {
-      const targetDayId = focusedDay?.id ?? itinerary.days[0]?.id;
-      if (!targetDayId) return;
-      dispatch({ type: "ADD_STOP", dayId: targetDayId, place });
+      const targetDayIndex = itinerary.days.findIndex(
+        (d) => d.id === (focusedDay?.id ?? itinerary.days[0]?.id)
+      );
+      const targetDay = itinerary.days[targetDayIndex];
+      if (!targetDay) return;
+      dispatch({ type: "ADD_STOP", dayId: targetDay.id, place });
+
+      const weekday = addDaysToDateString(
+        itinerary.startDate,
+        targetDayIndex
+      ).getDay();
+      const hours = describeHoursForDay(place.openingHours, weekday);
+      if (hours.status === "closed") {
+        setClosureWarning(
+          `${place.name} is closed on ${WEEKDAY_NAMES[weekday]}s — you just added it to ${targetDay.label}.`
+        );
+      }
     },
-    [focusedDay, itinerary.days, dispatch]
+    [focusedDay, itinerary.days, itinerary.startDate, dispatch]
   );
 
   function findDayAndIndex(stopId: string) {
@@ -156,6 +172,20 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
           onPlaceSelected={handleAddPlace}
           disabled={readOnly || !focusedDay}
         />
+        {closureWarning && (
+          <div className="mt-1.5 flex items-start gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-xs text-red-700 ring-1 ring-red-200">
+            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+            <span className="flex-1">{closureWarning}</span>
+            <button
+              type="button"
+              onClick={() => setClosureWarning(null)}
+              aria-label="Dismiss"
+              className="flex-shrink-0 text-red-400 hover:text-red-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
 
       <DndContext

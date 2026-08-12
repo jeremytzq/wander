@@ -2,14 +2,16 @@
 
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, MapPin, Star, X } from "lucide-react";
+import { AlertTriangle, Clock, GripVertical, MapPin, Star, X } from "lucide-react";
 import { PlaceStop } from "@/types/itinerary";
+import { describeHoursForDay } from "@/lib/opening-hours";
 
 interface StopCardProps {
   stop: PlaceStop;
   index: number;
   isFocused: boolean;
   color: string;
+  weekday: number;
   onRemove: () => void;
   readOnly?: boolean;
 }
@@ -19,9 +21,11 @@ export function StopCard({
   index,
   isFocused,
   color,
+  weekday,
   onRemove,
   readOnly,
 }: StopCardProps) {
+  const hours = describeHoursForDay(stop.openingHours, weekday);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: stop.id, disabled: readOnly });
 
@@ -79,12 +83,26 @@ export function StopCard({
           <MapPin className="h-3 w-3 flex-shrink-0 text-neutral-300" />
           <span className="truncate">{stop.address}</span>
         </p>
-        {typeof stop.rating === "number" && (
-          <p className="mt-1 inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
-            <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
-            {stop.rating.toFixed(1)}
-          </p>
-        )}
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          {typeof stop.rating === "number" && (
+            <p className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
+              <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
+              {stop.rating.toFixed(1)}
+            </p>
+          )}
+          {hours.status === "closed" && (
+            <p className="inline-flex items-center gap-0.5 rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600">
+              <AlertTriangle className="h-2.5 w-2.5" />
+              {hours.text}
+            </p>
+          )}
+          {hours.status === "open" && (
+            <p className="inline-flex items-center gap-0.5 text-[11px] text-neutral-400">
+              <Clock className="h-2.5 w-2.5" />
+              {hours.text}
+            </p>
+          )}
+        </div>
       </div>
 
       {!readOnly && (
