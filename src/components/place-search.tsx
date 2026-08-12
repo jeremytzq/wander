@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useMapsLibrary } from "@vis.gl/react-google-maps";
+import { Search } from "lucide-react";
 import { PlaceStop } from "@/types/itinerary";
 import { hasGoogleMapsApiKey } from "@/components/map/google-maps-provider";
 
@@ -14,12 +15,15 @@ interface PlaceSearchProps {
 export function PlaceSearch(props: PlaceSearchProps) {
   if (!hasGoogleMapsApiKey) {
     return (
-      <input
-        type="text"
-        disabled
-        placeholder="Set a Google Maps API key to search places…"
-        className="w-full rounded-lg border border-neutral-300 bg-neutral-100 px-3 py-2 text-sm text-neutral-400"
-      />
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-300" />
+        <input
+          type="text"
+          disabled
+          placeholder="Set a Google Maps API key to search places…"
+          className="w-full rounded-xl border border-neutral-200 bg-neutral-100 py-2.5 pl-9 pr-3 text-sm text-neutral-400"
+        />
+      </div>
     );
   }
   return <PlaceAutocompleteInput {...props} />;
@@ -70,12 +74,15 @@ function PlaceAutocompleteInput({ onPlaceSelected, disabled }: PlaceSearchProps)
   }, [placesLibrary]);
 
   return (
-    <input
-      ref={inputRef}
-      type="text"
-      placeholder="Search a place on Google Maps…"
-      disabled={disabled}
-      className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-blue-500 disabled:bg-neutral-100"
-    />
+    <div className="relative">
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+      <input
+        ref={inputRef}
+        type="text"
+        placeholder="Search a place on Google Maps…"
+        disabled={disabled}
+        className="w-full rounded-xl border border-neutral-200 py-2.5 pl-9 pr-3 text-sm text-neutral-900 shadow-sm outline-none transition-colors placeholder:text-neutral-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 disabled:bg-neutral-100"
+      />
+    </div>
   );
 }

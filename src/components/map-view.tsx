@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { Map, useMap } from "@vis.gl/react-google-maps";
+import { MapPinned } from "lucide-react";
 import { useItinerary } from "@/store/itinerary-context";
 import { ClassicMarker } from "@/components/map/classic-marker";
 import { DayRoute, RouteLeg } from "@/components/map/day-route";
@@ -18,13 +19,23 @@ interface MapViewProps {
 export function MapView({ onLegsChange }: MapViewProps) {
   if (!hasGoogleMapsApiKey) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-neutral-100 p-8 text-center text-sm text-neutral-600">
-        Set{" "}
-        <code className="mx-1 rounded bg-neutral-200 px-1">
-          NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
-        </code>{" "}
-        in <code className="mx-1 rounded bg-neutral-200 px-1">.env.local</code>{" "}
-        to enable the map and place search.
+      <div className="flex h-full w-full items-center justify-center bg-gradient-to-b from-neutral-50 to-neutral-100 p-8 text-center">
+        <div className="flex max-w-sm flex-col items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-neutral-200">
+            <MapPinned className="h-6 w-6 text-neutral-400" />
+          </div>
+          <p className="text-sm text-neutral-600">
+            Set{" "}
+            <code className="mx-1 rounded bg-neutral-200 px-1.5 py-0.5 text-xs">
+              NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
+            </code>{" "}
+            in{" "}
+            <code className="mx-1 rounded bg-neutral-200 px-1.5 py-0.5 text-xs">
+              .env.local
+            </code>{" "}
+            to enable the map and place search.
+          </p>
+        </div>
       </div>
     );
   }

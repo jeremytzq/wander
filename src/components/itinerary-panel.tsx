@@ -14,6 +14,7 @@ import {
   arrayMove,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
+import { MapPin, Plus } from "lucide-react";
 import { useItinerary } from "@/store/itinerary-context";
 import { DayColumn } from "@/components/day-column";
 import { PlaceSearch } from "@/components/place-search";
@@ -113,8 +114,12 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div>
-        <p className="mb-1 text-xs font-medium text-neutral-500">
-          Adding to {focusedDay?.label ?? "…"}
+        <p className="mb-1.5 flex items-center gap-1 text-xs font-medium text-neutral-500">
+          <MapPin className="h-3 w-3 text-blue-500" />
+          Adding to{" "}
+          <span className="font-semibold text-neutral-700">
+            {focusedDay?.label ?? "…"}
+          </span>
         </p>
         <PlaceSearch
           onPlaceSelected={handleAddPlace}
@@ -148,9 +153,10 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
             <button
               type="button"
               onClick={() => dispatch({ type: "ADD_DAY" })}
-              className="flex w-24 flex-shrink-0 items-center justify-center rounded-xl border border-dashed border-neutral-300 text-sm text-neutral-500 hover:border-blue-400 hover:text-blue-600"
+              className="flex w-24 flex-shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-neutral-200 text-sm text-neutral-400 transition-colors hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-600"
             >
-              + Add day
+              <Plus className="h-4 w-4" />
+              Add day
             </button>
           )}
         </div>
