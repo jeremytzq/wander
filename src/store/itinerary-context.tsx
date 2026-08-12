@@ -27,6 +27,7 @@ type Action =
   | { type: "RENAME_ITINERARY"; name: string }
   | { type: "ADD_DAY" }
   | { type: "REMOVE_DAY"; dayId: string }
+  | { type: "REORDER_DAYS"; dayIds: string[] }
   | { type: "RENAME_DAY"; dayId: string; label: string }
   | { type: "ADD_STOP"; dayId: string; place: Omit<PlaceStop, "id"> }
   | { type: "REMOVE_STOP"; dayId: string; stopId: string }
@@ -106,6 +107,13 @@ function reducer(state: State, action: Action): State {
         itinerary: touch({ ...state.itinerary, days }),
         focusedDayId,
       };
+    }
+    case "REORDER_DAYS": {
+      const byId = new Map(state.itinerary.days.map((d) => [d.id, d]));
+      const days = action.dayIds
+        .map((id) => byId.get(id))
+        .filter((d): d is ItineraryDay => Boolean(d));
+      return { ...state, itinerary: touch({ ...state.itinerary, days }) };
     }
     case "RENAME_DAY": {
       const days = state.itinerary.days.map((d) =>

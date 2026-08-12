@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import {
   ItineraryDay,
   addDaysToDateString,
@@ -31,46 +36,75 @@ export function DayColumn({
   canRemove,
 }: DayColumnProps) {
   const { dispatch, readOnly } = useItinerary();
-  const { setNodeRef } = useDroppable({ id: `day:${day.id}` });
+  const { setNodeRef: setDroppableRef } = useDroppable({ id: `day:${day.id}` });
+  const {
+    setNodeRef: setSortableRef,
+    attributes,
+    listeners,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: day.id, data: { type: "day" }, disabled: readOnly });
   const [editingLabel, setEditingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState(day.label);
   const dateLabel = formatDayDate(addDaysToDateString(startDate, dayIndex));
 
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
   return (
     <section
+      ref={setSortableRef}
+      style={style}
       className={`flex min-h-0 w-72 flex-shrink-0 flex-col rounded-xl border p-3 ${
         isFocused ? "border-blue-400 bg-blue-50/40" : "border-neutral-200 bg-neutral-50"
       }`}
     >
       <header className="mb-2 flex items-center justify-between gap-2">
-        {editingLabel ? (
-          <input
-            autoFocus
-            value={labelDraft}
-            onChange={(e) => setLabelDraft(e.target.value)}
-            onBlur={() => {
-              setEditingLabel(false);
-              dispatch({ type: "RENAME_DAY", dayId: day.id, label: labelDraft || day.label });
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") e.currentTarget.blur();
-            }}
-            className="w-28 rounded border border-neutral-300 px-1 text-sm font-semibold"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => !readOnly && setEditingLabel(true)}
-            className="flex min-w-0 items-baseline gap-1.5 text-left"
-          >
-            <span className="truncate text-sm font-semibold text-neutral-800">
-              {day.label}
-            </span>
-            <span className="flex-shrink-0 text-xs font-normal text-neutral-400">
-              {dateLabel}
-            </span>
-          </button>
-        )}
+        <div className="flex min-w-0 items-center gap-1">
+          {!readOnly && (
+            <button
+              type="button"
+              aria-label="Drag to reorder day"
+              className="cursor-grab touch-none px-0.5 text-neutral-400 active:cursor-grabbing"
+              {...attributes}
+              {...listeners}
+            >
+              ⠿
+            </button>
+          )}
+          {editingLabel ? (
+            <input
+              autoFocus
+              value={labelDraft}
+              onChange={(e) => setLabelDraft(e.target.value)}
+              onBlur={() => {
+                setEditingLabel(false);
+                dispatch({ type: "RENAME_DAY", dayId: day.id, label: labelDraft || day.label });
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+              className="w-28 rounded border border-neutral-300 px-1 text-sm font-semibold"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => !readOnly && setEditingLabel(true)}
+              className="flex min-w-0 items-baseline gap-1.5 text-left"
+            >
+              <span className="truncate text-sm font-semibold text-neutral-800">
+                {day.label}
+              </span>
+              <span className="flex-shrink-0 text-xs font-normal text-neutral-400">
+                {dateLabel}
+              </span>
+            </button>
+          )}
+        </div>
 
         <div className="flex items-center gap-2">
           <button
@@ -98,7 +132,7 @@ export function DayColumn({
       </header>
 
       <div
-        ref={setNodeRef}
+        ref={setDroppableRef}
         className="flex min-h-[3rem] flex-1 flex-col gap-2 overflow-y-auto"
       >
         <SortableContext items={day.stops.map((s) => s.id)} strategy={verticalListSortingStrategy}>

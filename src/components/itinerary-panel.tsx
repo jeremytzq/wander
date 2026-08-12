@@ -9,7 +9,11 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { arrayMove } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  arrayMove,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useItinerary } from "@/store/itinerary-context";
 import { DayColumn } from "@/components/day-column";
 import { PlaceSearch } from "@/components/place-search";
@@ -46,44 +50,62 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
     return null;
   }
 
+  // Resolves whatever the pointer is currently over (a day itself, its empty-
+  // area droppable, or one of its stops) down to a target day id.
+  function resolveDayId(overId: string): string | null {
+    if (itinerary.days.some((d) => d.id === overId)) return overId;
+    if (overId.startsWith("day:")) return overId.slice(4);
+    return findDayAndIndex(overId)?.day.id ?? null;
+  }
+
+  function resolveStopDestination(overId: string) {
+    if (overId.startsWith("day:")) {
+      const day = itinerary.days.find((d) => d.id === overId.slice(4));
+      return day ? { dayId: day.id, index: day.stops.length } : null;
+    }
+    const day = itinerary.days.find((d) => d.id === overId);
+    if (day) return { dayId: day.id, index: day.stops.length };
+    const found = findDayAndIndex(overId);
+    return found ? { dayId: found.day.id, index: found.index } : null;
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || readOnly) return;
     const activeId = String(active.id);
     const overId = String(over.id);
 
-    const source = findDayAndIndex(activeId);
-    if (!source) return;
-
-    let destDayId: string;
-    let destIndex: number;
-
-    if (overId.startsWith("day:")) {
-      destDayId = overId.slice(4);
-      const destDay = itinerary.days.find((d) => d.id === destDayId);
-      destIndex = destDay ? destDay.stops.length : 0;
-    } else {
-      const dest = findDayAndIndex(overId);
-      if (!dest) return;
-      destDayId = dest.day.id;
-      destIndex = dest.index;
+    if (active.data.current?.type === "day") {
+      const destDayId = resolveDayId(overId);
+      if (!destDayId || destDayId === activeId) return;
+      const dayIds = itinerary.days.map((d) => d.id);
+      const from = dayIds.indexOf(activeId);
+      const to = dayIds.indexOf(destDayId);
+      if (from === -1 || to === -1) return;
+      dispatch({ type: "REORDER_DAYS", dayIds: arrayMove(dayIds, from, to) });
+      return;
     }
 
-    if (source.day.id === destDayId) {
-      if (source.index === destIndex) return;
+    const source = findDayAndIndex(activeId);
+    if (!source) return;
+    const dest = resolveStopDestination(overId);
+    if (!dest) return;
+
+    if (source.day.id === dest.dayId) {
+      if (source.index === dest.index) return;
       const stopIds = arrayMove(
         source.day.stops.map((s) => s.id),
         source.index,
-        destIndex
+        dest.index
       );
       dispatch({ type: "REORDER_STOPS", dayId: source.day.id, stopIds });
     } else {
       dispatch({
         type: "MOVE_STOP",
         fromDayId: source.day.id,
-        toDayId: destDayId,
+        toDayId: dest.dayId,
         stopId: activeId,
-        toIndex: destIndex,
+        toIndex: dest.index,
       });
     }
   }
@@ -106,17 +128,22 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
         onDragEnd={handleDragEnd}
       >
         <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
-          {itinerary.days.map((day, dayIndex) => (
-            <DayColumn
-              key={day.id}
-              day={day}
-              dayIndex={dayIndex}
-              startDate={itinerary.startDate}
-              isFocused={day.id === focusedDayId}
-              legs={day.id === focusedDayId ? legs : []}
-              canRemove={itinerary.days.length > 1}
-            />
-          ))}
+          <SortableContext
+            items={itinerary.days.map((d) => d.id)}
+            strategy={horizontalListSortingStrategy}
+          >
+            {itinerary.days.map((day, dayIndex) => (
+              <DayColumn
+                key={day.id}
+                day={day}
+                dayIndex={dayIndex}
+                startDate={itinerary.startDate}
+                isFocused={day.id === focusedDayId}
+                legs={day.id === focusedDayId ? legs : []}
+                canRemove={itinerary.days.length > 1}
+              />
+            ))}
+          </SortableContext>
           {!readOnly && (
             <button
               type="button"
