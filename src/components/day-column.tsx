@@ -17,8 +17,9 @@ import {
 import { RouteLeg } from "@/components/map/day-route";
 import { StopCard } from "@/components/stop-card";
 import { TravelTimeBadge } from "@/components/travel-time-badge";
+import { DayCountryPicker } from "@/components/day-country-picker";
 import { useItinerary } from "@/store/itinerary-context";
-import { colorForStop, resolveCountryName } from "@/lib/country-colors";
+import { colorForDay, resolveDayCountry } from "@/lib/country-colors";
 
 interface DayColumnProps {
   day: ItineraryDay;
@@ -28,6 +29,7 @@ interface DayColumnProps {
   legs: RouteLeg[];
   canRemove: boolean;
   countryColors: Map<string, string>;
+  existingCountries: string[];
 }
 
 export function DayColumn({
@@ -38,6 +40,7 @@ export function DayColumn({
   legs,
   canRemove,
   countryColors,
+  existingCountries,
 }: DayColumnProps) {
   const { dispatch, readOnly } = useItinerary();
   const { setNodeRef: setDroppableRef } = useDroppable({ id: `day:${day.id}` });
@@ -53,13 +56,8 @@ export function DayColumn({
   const [labelDraft, setLabelDraft] = useState(day.label);
   const dateLabel = formatDayDate(addDaysToDateString(startDate, dayIndex));
 
-  const countriesToday = Array.from(
-    new Map(
-      day.stops
-        .filter((s) => resolveCountryName(s))
-        .map((s) => [resolveCountryName(s) as string, colorForStop(countryColors, s)])
-    )
-  );
+  const dayColor = colorForDay(countryColors, day);
+  const dayCountry = resolveDayCountry(day);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -113,20 +111,8 @@ export function DayColumn({
               <span className="truncate text-sm font-semibold text-neutral-800">
                 {day.label}
               </span>
-              <span className="flex flex-shrink-0 items-center gap-1 text-[11px] font-medium leading-tight text-neutral-400">
+              <span className="text-[11px] font-medium leading-tight text-neutral-400">
                 {dateLabel}
-                {countriesToday.length > 0 && (
-                  <span className="flex items-center gap-0.5">
-                    {countriesToday.map(([country, color]) => (
-                      <span
-                        key={country}
-                        title={country}
-                        className="h-1.5 w-1.5 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </span>
-                )}
               </span>
             </button>
           )}
@@ -164,6 +150,16 @@ export function DayColumn({
         </div>
       </header>
 
+      <div className="mb-2">
+        <DayCountryPicker
+          day={day}
+          color={dayColor}
+          countryName={dayCountry}
+          existingCountries={existingCountries}
+          readOnly={readOnly}
+        />
+      </div>
+
       <div
         ref={setDroppableRef}
         className="flex min-h-[3rem] flex-1 flex-col gap-2 overflow-y-auto"
@@ -185,7 +181,7 @@ export function DayColumn({
                 stop={stop}
                 index={index}
                 isFocused={isFocused}
-                color={colorForStop(countryColors, stop)}
+                color={dayColor}
                 readOnly={readOnly}
                 onRemove={() =>
                   dispatch({ type: "REMOVE_STOP", dayId: day.id, stopId: stop.id })

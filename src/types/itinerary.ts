@@ -1,3 +1,19 @@
+/** A single open/close span, e.g. Mon 9:00 AM – 5:00 PM. `openDay`/`closeDay`
+ * are 0=Sunday..6=Saturday, matching Google's convention; `closeDay` differs
+ * from `openDay` for spans that run past midnight. Times are "HHMM". */
+export interface OpeningPeriod {
+  openDay: number;
+  openTime: string;
+  closeDay?: number;
+  closeTime?: string;
+}
+
+export interface OpeningHours {
+  periods: OpeningPeriod[];
+  /** True for places Google reports as open 24/7. */
+  alwaysOpen?: boolean;
+}
+
 export interface PlaceStop {
   id: string;
   placeId: string;
@@ -12,6 +28,7 @@ export interface PlaceStop {
   country?: string;
   /** ISO 3166-1 alpha-2 code, e.g. "JP" — used to render a flag emoji. */
   countryCode?: string;
+  openingHours?: OpeningHours;
 }
 
 export interface ItineraryDay {
@@ -19,6 +36,11 @@ export interface ItineraryDay {
   label: string;
   date?: string;
   stops: PlaceStop[];
+  /** Manually set to label/color this day's card; overrides auto-detection
+   * from its stops' addresses. */
+  country?: string;
+  /** Manually set hex color; overrides the palette color for `country`. */
+  color?: string;
 }
 
 export interface Itinerary {

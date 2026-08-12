@@ -41,7 +41,13 @@ type Action =
     }
   | { type: "UPDATE_STOP_NOTES"; dayId: string; stopId: string; notes: string }
   | { type: "SET_FOCUSED_DAY"; dayId: string | null }
-  | { type: "SET_START_DATE"; startDate: string };
+  | { type: "SET_START_DATE"; startDate: string }
+  | {
+      type: "SET_DAY_COUNTRY";
+      dayId: string;
+      country: string | null;
+      color: string | null;
+    };
 
 interface State {
   itinerary: Itinerary;
@@ -113,6 +119,18 @@ function reducer(state: State, action: Action): State {
       const days = action.dayIds
         .map((id) => byId.get(id))
         .filter((d): d is ItineraryDay => Boolean(d));
+      return { ...state, itinerary: touch({ ...state.itinerary, days }) };
+    }
+    case "SET_DAY_COUNTRY": {
+      const days = state.itinerary.days.map((d) =>
+        d.id === action.dayId
+          ? {
+              ...d,
+              country: action.country ?? undefined,
+              color: action.color ?? undefined,
+            }
+          : d
+      );
       return { ...state, itinerary: touch({ ...state.itinerary, days }) };
     }
     case "RENAME_DAY": {

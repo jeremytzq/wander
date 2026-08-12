@@ -20,7 +20,7 @@ import { DayColumn } from "@/components/day-column";
 import { PlaceSearch } from "@/components/place-search";
 import { RouteLeg } from "@/components/map/day-route";
 import { PlaceStop } from "@/types/itinerary";
-import { buildCountryColorMap } from "@/lib/country-colors";
+import { buildCountryColorMap, buildDayLegend } from "@/lib/country-colors";
 
 interface ItineraryPanelProps {
   legs: RouteLeg[];
@@ -34,6 +34,14 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
   const countryColors = useMemo(
     () => buildCountryColorMap(itinerary),
     [itinerary]
+  );
+  const legend = useMemo(
+    () => buildDayLegend(itinerary, countryColors),
+    [itinerary, countryColors]
+  );
+  const existingCountries = useMemo(
+    () => Array.from(countryColors.keys()),
+    [countryColors]
   );
 
   const focusedDay =
@@ -127,9 +135,9 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
               {focusedDay?.label ?? "…"}
             </span>
           </p>
-          {countryColors.size > 1 && (
+          {legend.length > 1 && (
             <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              {Array.from(countryColors).map(([country, color]) => (
+              {legend.map(([country, color]) => (
                 <span
                   key={country}
                   className="flex items-center gap-1 text-xs font-medium text-neutral-500"
@@ -170,6 +178,7 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
                 legs={day.id === focusedDayId ? legs : []}
                 canRemove={itinerary.days.length > 1}
                 countryColors={countryColors}
+                existingCountries={existingCountries}
               />
             ))}
           </SortableContext>
