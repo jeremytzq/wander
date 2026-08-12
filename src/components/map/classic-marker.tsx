@@ -5,7 +5,7 @@ import { useMap } from "@vis.gl/react-google-maps";
 
 interface ClassicMarkerProps {
   position: google.maps.LatLngLiteral;
-  label?: string;
+  icon?: google.maps.Icon;
   title?: string;
   onClick?: () => void;
 }
@@ -16,7 +16,7 @@ interface ClassicMarkerProps {
  */
 export function ClassicMarker({
   position,
-  label,
+  icon,
   title,
   onClick,
 }: ClassicMarkerProps) {
@@ -30,7 +30,7 @@ export function ClassicMarker({
 
   useEffect(() => {
     if (!map) return;
-    const marker = new google.maps.Marker({ map, position, label, title });
+    const marker = new google.maps.Marker({ map, position, icon, title });
     markerRef.current = marker;
     const listener = marker.addListener("click", () => onClickRef.current?.());
     return () => {
@@ -47,8 +47,9 @@ export function ClassicMarker({
   }, [position.lat, position.lng]);
 
   useEffect(() => {
-    if (label !== undefined) markerRef.current?.setLabel(label);
-  }, [label]);
+    if (icon !== undefined) markerRef.current?.setIcon(icon);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [icon?.url]);
 
   useEffect(() => {
     if (title !== undefined) markerRef.current?.setTitle(title);
