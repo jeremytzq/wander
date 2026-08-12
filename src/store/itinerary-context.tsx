@@ -40,6 +40,12 @@ type Action =
       toIndex: number;
     }
   | { type: "UPDATE_STOP_NOTES"; dayId: string; stopId: string; notes: string }
+  | {
+      type: "SET_STOP_TIME";
+      dayId: string;
+      stopId: string;
+      time: { startTime: string; durationMinutes: number } | null;
+    }
   | { type: "SET_FOCUSED_DAY"; dayId: string | null }
   | { type: "SET_START_DATE"; startDate: string }
   | {
@@ -213,6 +219,25 @@ function reducer(state: State, action: Action): State {
               ...d,
               stops: d.stops.map((s) =>
                 s.id === action.stopId ? { ...s, notes: action.notes } : s
+              ),
+            }
+          : d
+      );
+      return { ...state, itinerary: touch({ ...state.itinerary, days }) };
+    }
+    case "SET_STOP_TIME": {
+      const days = state.itinerary.days.map((d) =>
+        d.id === action.dayId
+          ? {
+              ...d,
+              stops: d.stops.map((s) =>
+                s.id === action.stopId
+                  ? {
+                      ...s,
+                      startTime: action.time?.startTime,
+                      durationMinutes: action.time?.durationMinutes,
+                    }
+                  : s
               ),
             }
           : d

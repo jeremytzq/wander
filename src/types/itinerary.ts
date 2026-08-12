@@ -29,6 +29,10 @@ export interface PlaceStop {
   /** ISO 3166-1 alpha-2 code, e.g. "JP" — used to render a flag emoji. */
   countryCode?: string;
   openingHours?: OpeningHours;
+  /** "HH:MM" 24-hour, e.g. "09:30". Unset means the stop isn't scheduled to a time. */
+  startTime?: string;
+  /** Length of the visit in minutes; only meaningful alongside `startTime`. */
+  durationMinutes?: number;
 }
 
 export interface ItineraryDay {

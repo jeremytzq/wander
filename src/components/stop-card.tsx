@@ -5,6 +5,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { AlertTriangle, Clock, GripVertical, MapPin, Star, X } from "lucide-react";
 import { PlaceStop } from "@/types/itinerary";
 import { describeHoursForDay } from "@/lib/opening-hours";
+import { formatTime12 } from "@/lib/schedule";
 
 interface StopCardProps {
   stop: PlaceStop;
@@ -84,6 +85,12 @@ export function StopCard({
           <span className="truncate">{stop.address}</span>
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          {stop.startTime && (
+            <p className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
+              <Clock className="h-2.5 w-2.5" />
+              {formatTime12(stop.startTime)}
+            </p>
+          )}
           {typeof stop.rating === "number" && (
             <p className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
               <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
