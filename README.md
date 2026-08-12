@@ -17,8 +17,10 @@ and save or share the finished plan.
   with a driving route (Google Directions API), with drive time/distance
   shown between consecutive stops.
 - **Save & share** — itineraries autosave to `localStorage`; "Copy share
-  link" encodes the itinerary into a URL anyone can open (read-only, with a
-  "Save a copy to edit" option).
+  link" creates a short `/s/[id]` link (itinerary stored server-side in
+  Redis) anyone can open read-only, with a "Save a copy to edit" option. If
+  Redis isn't configured, it falls back to a longer self-contained link
+  instead of failing.
 
 ## Setup
 
@@ -50,7 +52,20 @@ and save or share the finished plan.
    (`NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` is optional, only needed for custom
    cloud-based map styling.)
 
-4. Run the dev server:
+4. (Optional, for short share links) Create a free Redis database at
+   [console.upstash.com](https://console.upstash.com), then copy its REST
+   URL and token into `.env.local`:
+
+   ```
+   UPSTASH_REDIS_REST_URL=your-db-rest-url
+   UPSTASH_REDIS_REST_TOKEN=your-db-rest-token
+   ```
+
+   Without this, "Copy share link" still works — it just produces a longer
+   link that encodes the itinerary directly in the URL instead of a short
+   `/s/[id]` one.
+
+5. Run the dev server:
 
    ```bash
    npm run dev
@@ -64,6 +79,8 @@ and save or share the finished plan.
 ```
 src/
   app/page.tsx                 entry point (client-only shell, no SSR)
+  app/s/[id]/page.tsx          server-rendered read-only view for a short share link
+  app/api/share/route.ts       POST: stores an itinerary, returns a short id
   components/app-shell.tsx     top-level layout: providers + sidebar + map
   components/save-share-bar.tsx itinerary name, save/switch trips, share link
   components/itinerary-panel.tsx drag-and-drop day columns + place search
@@ -73,16 +90,17 @@ src/
   components/map-view.tsx      Google Map + markers + focused-day route
   components/map/              low-level map building blocks (marker, route)
   store/itinerary-context.tsx  itinerary state (reducer) + autosave + load
-  lib/storage.ts               localStorage persistence + share-link encoding
+  lib/storage.ts               localStorage persistence + client-side share encoding
+  lib/share-store.ts           server-only Redis read/write for short share links
   types/itinerary.ts           Itinerary / ItineraryDay / PlaceStop types
 ```
 
 ## Notes / next steps
 
-- Share links embed the itinerary as base64 JSON in the URL query string —
-  simple and backend-free, but links get long for big itineraries. A real
-  backend (e.g. a database + short IDs) would be the natural next step for
-  multi-user sharing and collaboration.
+- Short links (`/s/[id]`) currently never expire until Redis's TTL (~1 year,
+  see `SHARE_TTL_SECONDS` in `lib/share-store.ts`) and have no auth — anyone
+  with the id can view the trip. Fine for casual sharing; add access control
+  if that's ever a concern.
 - Travel time currently uses driving directions. Walking/transit mode
   toggles would be a straightforward addition (`travelMode` on the
   Directions request in `components/map/day-route.tsx`).

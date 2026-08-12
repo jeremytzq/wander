@@ -90,3 +90,29 @@ export function decodeItineraryFromShare(encoded: string): Itinerary | null {
     return null;
   }
 }
+
+/**
+ * Creates a short /s/[id] link by storing the itinerary server-side. Falls
+ * back to the old self-contained (longer) ?share= link if the server-side
+ * store isn't reachable or isn't configured, so sharing never fully breaks.
+ */
+export async function createShareLink(itinerary: Itinerary): Promise<string> {
+  const origin = window.location.origin;
+
+  try {
+    const response = await fetch("/api/share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(itinerary),
+    });
+    if (response.ok) {
+      const { id } = (await response.json()) as { id: string };
+      return `${origin}/s/${id}`;
+    }
+  } catch {
+    // Network error, offline, etc. — fall through to the legacy link.
+  }
+
+  const encoded = encodeItineraryForShare(itinerary);
+  return `${origin}/?share=${encoded}`;
+}

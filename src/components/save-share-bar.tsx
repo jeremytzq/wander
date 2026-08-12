@@ -3,29 +3,26 @@
 import { useState } from "react";
 import { useItinerary } from "@/store/itinerary-context";
 import { Itinerary, createEmptyItinerary } from "@/types/itinerary";
-import {
-  deleteItinerary,
-  encodeItineraryForShare,
-  listItineraries,
-} from "@/lib/storage";
+import { createShareLink, deleteItinerary, listItineraries } from "@/lib/storage";
 
 export function SaveShareBar() {
   const { itinerary, readOnly, dispatch } = useItinerary();
   const [showTrips, setShowTrips] = useState(false);
   const [trips, setTrips] = useState<Itinerary[]>([]);
-  const [copied, setCopied] = useState(false);
+  const [shareState, setShareState] = useState<"idle" | "working" | "copied">(
+    "idle"
+  );
 
   function refreshTrips() {
     setTrips(listItineraries());
   }
 
-  function handleShare() {
-    const encoded = encodeItineraryForShare(itinerary);
-    const url = `${window.location.origin}${window.location.pathname}?share=${encoded}`;
-    navigator.clipboard.writeText(url).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+  async function handleShare() {
+    setShareState("working");
+    const url = await createShareLink(itinerary);
+    await navigator.clipboard.writeText(url);
+    setShareState("copied");
+    setTimeout(() => setShareState("idle"), 2000);
   }
 
   function handleNewTrip() {
@@ -34,7 +31,9 @@ export function SaveShareBar() {
 
   function handleSaveCopy() {
     dispatch({ type: "TAKE_OWNERSHIP" });
-    window.history.replaceState(null, "", window.location.pathname);
+    // Move off /s/[id] (a server-rendered, always-read-only route) back to
+    // the root app route so the now-editable copy persists across reloads.
+    window.history.replaceState(null, "", "/");
   }
 
   function handleOpenTrip(t: Itinerary) {
@@ -134,9 +133,14 @@ export function SaveShareBar() {
 
       <button
         onClick={handleShare}
-        className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+        disabled={shareState === "working"}
+        className="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60"
       >
-        {copied ? "Link copied!" : "Copy share link"}
+        {shareState === "working"
+          ? "Creating link…"
+          : shareState === "copied"
+            ? "Link copied!"
+            : "Copy share link"}
       </button>
     </div>
   );

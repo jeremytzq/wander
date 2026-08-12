@@ -210,10 +210,19 @@ function withFocus(itinerary: Itinerary, readOnly: boolean): State {
   };
 }
 
+interface InitSeed {
+  itinerary?: Itinerary;
+  readOnly?: boolean;
+}
+
 // Runs only in the browser: AppShell (and this provider) is loaded with
 // `ssr: false`, so it's safe to read the URL/localStorage synchronously here
-// as the reducer's initial state instead of loading it in an effect.
-function initState(): State {
+// as the reducer's initial state instead of loading it in an effect. When a
+// seed itinerary is passed in (e.g. server-fetched by the /s/[id] short-link
+// page) it takes priority over the URL/localStorage lookup.
+function initState(seed: InitSeed): State {
+  if (seed.itinerary) return withFocus(seed.itinerary, !!seed.readOnly);
+
   const params = new URLSearchParams(window.location.search);
   const shared = params.get("share");
   if (shared) {
@@ -226,8 +235,22 @@ function initState(): State {
   return withFocus(createEmptyItinerary(), false);
 }
 
-export function ItineraryProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, initState);
+interface ItineraryProviderProps {
+  children: React.ReactNode;
+  initialItinerary?: Itinerary;
+  initialReadOnly?: boolean;
+}
+
+export function ItineraryProvider({
+  children,
+  initialItinerary,
+  initialReadOnly,
+}: ItineraryProviderProps) {
+  const [state, dispatch] = useReducer(
+    reducer,
+    { itinerary: initialItinerary, readOnly: initialReadOnly },
+    initState
+  );
 
   // Autosave whenever the itinerary changes (skip while read-only / viewing a shared link).
   useEffect(() => {

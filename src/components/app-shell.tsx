@@ -7,12 +7,21 @@ import { SaveShareBar } from "@/components/save-share-bar";
 import { ItineraryPanel } from "@/components/itinerary-panel";
 import { MapView } from "@/components/map-view";
 import { RouteLeg } from "@/components/map/day-route";
+import { Itinerary } from "@/types/itinerary";
 
-export function AppShell() {
+interface AppShellProps {
+  initialItinerary?: Itinerary;
+  initialReadOnly?: boolean;
+}
+
+export function AppShell({ initialItinerary, initialReadOnly }: AppShellProps) {
   const [legs, setLegs] = useState<RouteLeg[]>([]);
 
   return (
-    <ItineraryProvider>
+    <ItineraryProvider
+      initialItinerary={initialItinerary}
+      initialReadOnly={initialReadOnly}
+    >
       <GoogleMapsProvider>
         <div className="flex h-dvh flex-col">
           <SaveShareBar />
