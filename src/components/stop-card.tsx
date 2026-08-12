@@ -8,11 +8,18 @@ import { PlaceStop } from "@/types/itinerary";
 interface StopCardProps {
   stop: PlaceStop;
   index: number;
+  isFocused: boolean;
   onRemove: () => void;
   readOnly?: boolean;
 }
 
-export function StopCard({ stop, index, onRemove, readOnly }: StopCardProps) {
+export function StopCard({
+  stop,
+  index,
+  isFocused,
+  onRemove,
+  readOnly,
+}: StopCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: stop.id, disabled: readOnly });
 
@@ -40,18 +47,28 @@ export function StopCard({ stop, index, onRemove, readOnly }: StopCardProps) {
         </button>
       )}
 
-      {stop.photoUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={stop.photoUrl}
-          alt=""
-          className="h-14 w-14 flex-shrink-0 rounded-lg object-cover ring-1 ring-inset ring-black/5"
-        />
-      ) : (
-        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-50 to-indigo-100 text-sm font-semibold text-blue-500 ring-1 ring-inset ring-black/5">
+      <div className="relative h-14 w-14 flex-shrink-0">
+        {stop.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={stop.photoUrl}
+            alt=""
+            className="h-14 w-14 rounded-lg object-cover ring-1 ring-inset ring-black/5"
+          />
+        ) : (
+          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-neutral-50 to-neutral-100 ring-1 ring-inset ring-black/5">
+            <MapPin className="h-5 w-5 text-neutral-300" />
+          </div>
+        )}
+        {/* Matches the number on this stop's pin on the map. */}
+        <span
+          className={`absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white shadow-sm ring-2 ring-white ${
+            isFocused ? "bg-blue-600" : "bg-neutral-400"
+          }`}
+        >
           {index + 1}
-        </div>
-      )}
+        </span>
+      </div>
 
       <div className="min-w-0 flex-1 py-0.5">
         <p className="truncate text-sm font-medium text-neutral-900">

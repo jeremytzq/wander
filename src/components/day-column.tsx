@@ -161,12 +161,15 @@ export function DayColumn({
               <StopCard
                 stop={stop}
                 index={index}
+                isFocused={isFocused}
                 readOnly={readOnly}
                 onRemove={() =>
                   dispatch({ type: "REMOVE_STOP", dayId: day.id, stopId: stop.id })
                 }
               />
-              {isFocused && legs[index] && <TravelTimeBadge leg={legs[index]} />}
+              {index < day.stops.length - 1 && (
+                <TravelTimeBadge leg={isFocused ? legs[index] : undefined} />
+              )}
             </div>
           ))}
         </SortableContext>
