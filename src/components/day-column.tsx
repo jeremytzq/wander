@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -8,7 +8,14 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { AlertTriangle, GripVertical, MapPin, MapPinned, X } from "lucide-react";
+import {
+  AlertTriangle,
+  GripVertical,
+  MapPin,
+  MapPinned,
+  Route as RouteIcon,
+  X,
+} from "lucide-react";
 import {
   ItineraryDay,
   addDaysToDateString,
@@ -22,6 +29,11 @@ import { AccommodationCard } from "@/components/accommodation-card";
 import { useItinerary } from "@/store/itinerary-context";
 import { colorForDay, resolveDayCountry } from "@/lib/country-colors";
 import { describeHoursForDay } from "@/lib/opening-hours";
+import {
+  ReorderSuggestion,
+  SpreadWarning,
+  analyzeDayRoute,
+} from "@/lib/route-suggestions";
 
 interface DayColumnProps {
   day: ItineraryDay;
@@ -65,6 +77,13 @@ export function DayColumn({
   const closedCount = day.stops.filter(
     (s) => describeHoursForDay(s.openingHours, weekday).status === "closed"
   ).length;
+  const routeSuggestions = useMemo(() => analyzeDayRoute(day), [day]);
+  const reorderSuggestion = routeSuggestions.find(
+    (s): s is ReorderSuggestion => s.type === "reorder"
+  );
+  const spreadWarning = routeSuggestions.find(
+    (s): s is SpreadWarning => s.type === "spread"
+  );
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -172,6 +191,36 @@ export function DayColumn({
           </span>
         )}
       </div>
+
+      {reorderSuggestion && !readOnly && (
+        <div className="mb-2 flex flex-shrink-0 items-start gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[11px] text-blue-700 ring-1 ring-blue-100">
+          <RouteIcon className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+          <span className="flex-1">
+            Reordering could shorten this day&apos;s route by ~
+            {reorderSuggestion.savedKm.toFixed(1)} km.
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              dispatch({
+                type: "REORDER_STOPS",
+                dayId: day.id,
+                stopIds: reorderSuggestion.suggestedStopIds,
+              })
+            }
+            className="flex-shrink-0 rounded-md bg-blue-600 px-1.5 py-0.5 text-[11px] font-medium text-white transition-colors hover:bg-blue-700"
+          >
+            Apply
+          </button>
+        </div>
+      )}
+      {spreadWarning && (
+        <p className="mb-2 flex flex-shrink-0 items-center gap-1 text-[11px] text-amber-600">
+          <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+          Stops span ~{Math.round(spreadWarning.maxKm)} km — consider
+          splitting across days.
+        </p>
+      )}
 
       <div
         ref={setDroppableRef}

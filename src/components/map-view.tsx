@@ -7,7 +7,10 @@ import { useItinerary } from "@/store/itinerary-context";
 import { ClassicMarker } from "@/components/map/classic-marker";
 import { DayRoute, RouteLeg } from "@/components/map/day-route";
 import { hasGoogleMapsApiKey } from "@/components/map/google-maps-provider";
-import { createNumberedPinIcon } from "@/components/map/pin-icon";
+import {
+  createAccommodationPinIcon,
+  createNumberedPinIcon,
+} from "@/components/map/pin-icon";
 
 const DEFAULT_CENTER = { lat: 20, lng: 0 };
 const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID;
@@ -57,12 +60,19 @@ function MapContent({ onLegsChange }: MapViewProps) {
   const map = useMap();
   const { itinerary, focusedDayId } = useItinerary();
 
-  const allStops = itinerary.days.flatMap((d) => d.stops);
+  const allStops = itinerary.days.flatMap((d) =>
+    d.accommodation ? [...d.stops, d.accommodation] : d.stops
+  );
   const focusedDay =
     itinerary.days.find((d) => d.id === focusedDayId) ?? itinerary.days[0];
   // Zoom to whatever day is focused; fall back to the whole trip if it has
   // no stops yet so the view doesn't collapse to the empty default.
-  const zoomTargetStops = focusedDay?.stops.length ? focusedDay.stops : allStops;
+  const focusedDayStops = focusedDay
+    ? focusedDay.accommodation
+      ? [...focusedDay.stops, focusedDay.accommodation]
+      : focusedDay.stops
+    : [];
+  const zoomTargetStops = focusedDayStops.length ? focusedDayStops : allStops;
   const zoomTargetIds = zoomTargetStops.map((s) => s.id).join(",");
 
   useEffect(() => {
@@ -89,6 +99,20 @@ function MapContent({ onLegsChange }: MapViewProps) {
             title={`Day ${dayIndex + 1}: ${stop.name}`}
           />
         ))
+      )}
+      {itinerary.days.map(
+        (day, dayIndex) =>
+          day.accommodation && (
+            <ClassicMarker
+              key={day.accommodation.id}
+              position={{
+                lat: day.accommodation.lat,
+                lng: day.accommodation.lng,
+              }}
+              icon={createAccommodationPinIcon(day.id === focusedDayId)}
+              title={`Day ${dayIndex + 1} stay: ${day.accommodation.name}`}
+            />
+          )
       )}
       {focusedDay && (
         <DayRoute stops={focusedDay.stops} onLegsChange={onLegsChange} />
