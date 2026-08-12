@@ -8,6 +8,10 @@ export interface PlaceStop {
   photoUrl?: string;
   rating?: number;
   notes?: string;
+  /** Full country name, e.g. "Japan" — used to color-code stops by country. */
+  country?: string;
+  /** ISO 3166-1 alpha-2 code, e.g. "JP" — used to render a flag emoji. */
+  countryCode?: string;
 }
 
 export interface ItineraryDay {

@@ -9,6 +9,7 @@ interface StopCardProps {
   stop: PlaceStop;
   index: number;
   isFocused: boolean;
+  color: string;
   onRemove: () => void;
   readOnly?: boolean;
 }
@@ -17,6 +18,7 @@ export function StopCard({
   stop,
   index,
   isFocused,
+  color,
   onRemove,
   readOnly,
 }: StopCardProps) {
@@ -60,11 +62,10 @@ export function StopCard({
             <MapPin className="h-5 w-5 text-neutral-300" />
           </div>
         )}
-        {/* Matches the number on this stop's pin on the map. */}
+        {/* Matches the number and color of this stop's pin on the map. */}
         <span
-          className={`absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white shadow-sm ring-2 ring-white ${
-            isFocused ? "bg-blue-600" : "bg-neutral-400"
-          }`}
+          style={{ backgroundColor: color, opacity: isFocused ? 1 : 0.65 }}
+          className="absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white shadow-sm ring-2 ring-white"
         >
           {index + 1}
         </span>

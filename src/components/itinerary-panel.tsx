@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   DndContext,
   DragEndEvent,
@@ -20,6 +20,7 @@ import { DayColumn } from "@/components/day-column";
 import { PlaceSearch } from "@/components/place-search";
 import { RouteLeg } from "@/components/map/day-route";
 import { PlaceStop } from "@/types/itinerary";
+import { buildCountryColorMap } from "@/lib/country-colors";
 
 interface ItineraryPanelProps {
   legs: RouteLeg[];
@@ -29,6 +30,10 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
   const { itinerary, focusedDayId, readOnly, dispatch } = useItinerary();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+  const countryColors = useMemo(
+    () => buildCountryColorMap(itinerary),
+    [itinerary]
   );
 
   const focusedDay =
@@ -114,13 +119,31 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
       <div>
-        <p className="mb-1.5 flex items-center gap-1 text-xs font-medium text-neutral-500">
-          <MapPin className="h-3 w-3 text-blue-500" />
-          Adding to{" "}
-          <span className="font-semibold text-neutral-700">
-            {focusedDay?.label ?? "…"}
-          </span>
-        </p>
+        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <p className="flex items-center gap-1 text-xs font-medium text-neutral-500">
+            <MapPin className="h-3 w-3 text-blue-500" />
+            Adding to{" "}
+            <span className="font-semibold text-neutral-700">
+              {focusedDay?.label ?? "…"}
+            </span>
+          </p>
+          {countryColors.size > 1 && (
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+              {Array.from(countryColors).map(([country, color]) => (
+                <span
+                  key={country}
+                  className="flex items-center gap-1 text-xs font-medium text-neutral-500"
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: color }}
+                  />
+                  {country}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
         <PlaceSearch
           onPlaceSelected={handleAddPlace}
           disabled={readOnly || !focusedDay}
@@ -146,6 +169,7 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
                 isFocused={day.id === focusedDayId}
                 legs={day.id === focusedDayId ? legs : []}
                 canRemove={itinerary.days.length > 1}
+                countryColors={countryColors}
               />
             ))}
           </SortableContext>

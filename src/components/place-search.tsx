@@ -49,12 +49,16 @@ function PlaceAutocompleteInput({ onPlaceSelected, disabled }: PlaceSearchProps)
         "geometry",
         "photos",
         "rating",
+        "address_components",
       ],
     });
 
     const listener = autocomplete.addListener("place_changed", () => {
       const place = autocomplete.getPlace();
       if (!place.geometry?.location) return;
+      const countryComponent = place.address_components?.find((c) =>
+        c.types.includes("country")
+      );
       onPlaceSelectedRef.current({
         placeId: place.place_id ?? "",
         name: place.name ?? place.formatted_address ?? "Unnamed place",
@@ -63,6 +67,8 @@ function PlaceAutocompleteInput({ onPlaceSelected, disabled }: PlaceSearchProps)
         lng: place.geometry.location.lng(),
         photoUrl: place.photos?.[0]?.getUrl({ maxWidth: 400 }),
         rating: place.rating,
+        country: countryComponent?.long_name,
+        countryCode: countryComponent?.short_name,
       });
       if (inputRef.current) inputRef.current.value = "";
     });
