@@ -1,31 +1,41 @@
 "use client";
 
 import { useState } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import {
   Calendar,
   Check,
   Compass,
   Eye,
   FolderOpen,
+  LogIn,
   Link2,
   Loader2,
   Plus,
+  UserRound,
   X,
 } from "lucide-react";
 import { useItinerary } from "@/store/itinerary-context";
 import { Itinerary, createEmptyItinerary } from "@/types/itinerary";
 import { createShareLink, deleteItinerary, listItineraries } from "@/lib/storage";
+import {
+  deleteAccountItinerary,
+  fetchAccountItineraries,
+} from "@/lib/account-sync";
 
 export function SaveShareBar() {
   const { itinerary, readOnly, dispatch } = useItinerary();
+  const { data: session, status: sessionStatus } = useSession();
+  const isSignedIn = sessionStatus === "authenticated";
   const [showTrips, setShowTrips] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
   const [trips, setTrips] = useState<Itinerary[]>([]);
   const [shareState, setShareState] = useState<"idle" | "working" | "copied">(
     "idle"
   );
 
-  function refreshTrips() {
-    setTrips(listItineraries());
+  async function refreshTrips() {
+    setTrips(isSignedIn ? await fetchAccountItineraries() : listItineraries());
   }
 
   async function handleShare() {
@@ -52,9 +62,13 @@ export function SaveShareBar() {
     setShowTrips(false);
   }
 
-  function handleDeleteTrip(id: string, e: React.MouseEvent) {
+  async function handleDeleteTrip(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-    deleteItinerary(id);
+    if (isSignedIn) {
+      await deleteAccountItinerary(id);
+    } else {
+      deleteItinerary(id);
+    }
     refreshTrips();
   }
 
@@ -128,6 +142,18 @@ export function SaveShareBar() {
                   onClick={() => setShowTrips(false)}
                 />
                 <div className="absolute right-0 z-20 mt-1.5 w-64 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-lg">
+                  {!isSignedIn && (
+                    <p className="px-2.5 pb-1.5 pt-1 text-[11px] text-neutral-400">
+                      Saved on this browser only.{" "}
+                      <button
+                        onClick={() => signIn("google")}
+                        className="font-medium text-blue-600 hover:underline"
+                      >
+                        Sign in
+                      </button>{" "}
+                      to sync across devices.
+                    </p>
+                  )}
                   {trips.length === 0 && (
                     <p className="p-3 text-center text-xs text-neutral-400">
                       No saved trips yet.
@@ -164,6 +190,59 @@ export function SaveShareBar() {
             New trip
           </button>
         </>
+      )}
+
+      {isSignedIn ? (
+        <div className="relative">
+          <button
+            onClick={() => setShowAccount((s) => !s)}
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1.5 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+          >
+            {session?.user?.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={session.user.image}
+                alt=""
+                className="h-5 w-5 flex-shrink-0 rounded-full"
+              />
+            ) : (
+              <UserRound className="h-3.5 w-3.5 flex-shrink-0 text-neutral-400" />
+            )}
+            <span className="hidden max-w-[100px] truncate sm:inline">
+              {session?.user?.name ?? "Account"}
+            </span>
+          </button>
+          {showAccount && (
+            <>
+              <button
+                aria-label="Close menu"
+                className="fixed inset-0 z-10 cursor-default"
+                onClick={() => setShowAccount(false)}
+              />
+              <div className="absolute right-0 z-20 mt-1.5 w-52 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-lg">
+                {session?.user?.email && (
+                  <p className="truncate px-2.5 py-1.5 text-xs text-neutral-400">
+                    {session.user.email}
+                  </p>
+                )}
+                <button
+                  onClick={() => signOut()}
+                  className="w-full rounded-lg px-2.5 py-2 text-left text-sm text-red-600 transition-colors hover:bg-red-50"
+                >
+                  Sign out
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <button
+          onClick={() => signIn("google")}
+          className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+        >
+          <LogIn className="h-3.5 w-3.5 text-neutral-400" />
+          Sign in
+        </button>
       )}
 
       <button

@@ -21,6 +21,9 @@ and save or share the finished plan.
   Redis) anyone can open read-only, with a "Save a copy to edit" option. If
   Redis isn't configured, it falls back to a longer self-contained link
   instead of failing.
+- **Account sync (optional)** — "Sign in" with Google to save itineraries to
+  your account (Redis-backed) instead of just this browser's `localStorage`,
+  so "My trips" is the same list on any browser/device you sign into.
 
 ## Setup
 
@@ -65,7 +68,32 @@ and save or share the finished plan.
    link that encodes the itinerary directly in the URL instead of a short
    `/s/[id]` one.
 
-5. Run the dev server:
+5. (Optional, for "Sign in" / cross-device sync) Create a Google OAuth 2.0
+   Client ID at
+   [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+   (Create credentials → OAuth client ID → Web application), with these
+   Authorized redirect URIs:
+
+   ```
+   http://localhost:3000/api/auth/callback/google
+   https://your-deployed-domain/api/auth/callback/google
+   ```
+
+   Then add to `.env.local` (also requires the Upstash setup in step 4 —
+   account sync reuses the same Redis database):
+
+   ```
+   AUTH_GOOGLE_ID=your-client-id
+   AUTH_GOOGLE_SECRET=your-client-secret
+   AUTH_SECRET=$(openssl rand -base64 33)
+   ```
+
+   Without this, the app works exactly as before — itineraries just stay in
+   `localStorage`. The "Sign in" button is always shown; clicking it without
+   these set will show Google's own "invalid client" error page rather than
+   failing inside the app.
+
+6. Run the dev server:
 
    ```bash
    npm run dev
@@ -92,6 +120,11 @@ src/
   store/itinerary-context.tsx  itinerary state (reducer) + autosave + load
   lib/storage.ts               localStorage persistence + client-side share encoding
   lib/share-store.ts           server-only Redis read/write for short share links
+  auth.ts                      Auth.js config (Google sign-in, JWT sessions)
+  app/api/itineraries/         GET/POST/DELETE: signed-in user's account itineraries
+  lib/user-itineraries-store.ts server-only Redis read/write for account itineraries
+  lib/account-sync.ts          client-side fetch wrappers for the itineraries API
+  components/account-sync.tsx  headless: debounced save of the active itinerary to the account
   types/itinerary.ts           Itinerary / ItineraryDay / PlaceStop types
 ```
 
