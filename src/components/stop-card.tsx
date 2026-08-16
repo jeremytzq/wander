@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { AlertTriangle, Clock, GripVertical, MapPin, Star, X } from "lucide-react";
@@ -27,6 +28,7 @@ export function StopCard({
   readOnly,
 }: StopCardProps) {
   const hours = describeHoursForDay(stop.openingHours, weekday);
+  const [imgError, setImgError] = useState(false);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: stop.id, disabled: readOnly });
 
@@ -55,11 +57,12 @@ export function StopCard({
       )}
 
       <div className="relative h-14 w-14 flex-shrink-0">
-        {stop.photoUrl ? (
+        {stop.photoUrl && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={stop.photoUrl}
             alt=""
+            onError={() => setImgError(true)}
             className="h-14 w-14 rounded-lg object-cover ring-1 ring-inset ring-black/5"
           />
         ) : (

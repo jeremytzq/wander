@@ -16,6 +16,7 @@ interface AccommodationCardProps {
 export function AccommodationCard({ day, readOnly }: AccommodationCardProps) {
   const { dispatch } = useItinerary();
   const [open, setOpen] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   function handleSelect(place: Omit<PlaceStop, "id">) {
     dispatch({
@@ -39,11 +40,12 @@ export function AccommodationCard({ day, readOnly }: AccommodationCardProps) {
   if (stay) {
     return (
       <div className="flex gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 p-2">
-        {stay.photoUrl ? (
+        {stay.photoUrl && !imgError ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={stay.photoUrl}
             alt=""
+            onError={() => setImgError(true)}
             className="h-12 w-12 flex-shrink-0 rounded-lg object-cover ring-1 ring-inset ring-black/5"
           />
         ) : (
