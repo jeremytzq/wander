@@ -24,6 +24,10 @@ and save or share the finished plan.
 - **Account sync (optional)** — "Sign in" with Google to save itineraries to
   your account (Redis-backed) instead of just this browser's `localStorage`,
   so "My trips" is the same list on any browser/device you sign into.
+- **Generate with AI (optional)** — describe a destination, trip length, and
+  interests; Claude plans a day-by-day draft, and every suggested place is
+  resolved to a real Google Places result (address, coordinates, photo,
+  rating, opening hours) server-side before it's added to the trip.
 
 ## Setup
 
@@ -93,7 +97,25 @@ and save or share the finished plan.
    these set will show Google's own "invalid client" error page rather than
    failing inside the app.
 
-6. Run the dev server:
+6. (Optional, for "Generate with AI") Get an
+   [Anthropic API key](https://console.anthropic.com), and create a
+   **second, separate** Google Maps API key with no HTTP-referrer
+   restriction (server requests have no referrer) and its "API
+   restrictions" limited to just "Places API (New)":
+
+   ```
+   ANTHROPIC_API_KEY=your-anthropic-key
+   GOOGLE_PLACES_SERVER_API_KEY=your-second-unrestricted-key
+   ```
+
+   Without this, the app works exactly as before; "Generate with AI" shows
+   a clear "isn't configured on this deployment" message instead of
+   erroring. Photos it fetches are proxied through `/api/place-photo` so
+   this key is never sent to the browser (unlike the referrer-restricted
+   `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, an unrestricted key would be usable by
+   anyone who could read it out of a page).
+
+7. Run the dev server:
 
    ```bash
    npm run dev
@@ -125,6 +147,11 @@ src/
   lib/user-itineraries-store.ts server-only Redis read/write for account itineraries
   lib/account-sync.ts          client-side fetch wrappers for the itineraries API
   components/account-sync.tsx  headless: debounced save of the active itinerary to the account
+  lib/ai/generate-itinerary.ts server-only: Claude plans the trip, then grounds it in real places
+  lib/ai/places-lookup.ts      server-only Places API (New) Text Search + opening-hours mapping
+  app/api/generate-itinerary/  POST: destination/days/interests -> a full generated Itinerary
+  app/api/place-photo/         GET: proxies a Places photo so the server-side key stays server-side
+  components/generate-itinerary-modal.tsx "Generate with AI" form + request/result handling
   types/itinerary.ts           Itinerary / ItineraryDay / PlaceStop types
 ```
 

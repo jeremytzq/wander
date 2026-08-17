@@ -12,6 +12,7 @@ import {
   Link2,
   Loader2,
   Plus,
+  Sparkles,
   UserRound,
   X,
 } from "lucide-react";
@@ -22,11 +23,13 @@ import {
   deleteAccountItinerary,
   fetchAccountItineraries,
 } from "@/lib/account-sync";
+import { GenerateItineraryModal } from "@/components/generate-itinerary-modal";
 
 export function SaveShareBar() {
   const { itinerary, readOnly, dispatch } = useItinerary();
   const { data: session, status: sessionStatus } = useSession();
   const isSignedIn = sessionStatus === "authenticated";
+  const [showGenerate, setShowGenerate] = useState(false);
   const [showTrips, setShowTrips] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
   const [trips, setTrips] = useState<Itinerary[]>([]);
@@ -189,7 +192,19 @@ export function SaveShareBar() {
             <Plus className="h-3.5 w-3.5 text-neutral-400" />
             New trip
           </button>
+
+          <button
+            onClick={() => setShowGenerate(true)}
+            className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50/60 px-3 py-1.5 text-sm text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-50"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+            Generate with AI
+          </button>
         </>
+      )}
+
+      {showGenerate && (
+        <GenerateItineraryModal onClose={() => setShowGenerate(false)} />
       )}
 
       {isSignedIn ? (
