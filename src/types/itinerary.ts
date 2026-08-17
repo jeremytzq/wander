@@ -33,6 +33,8 @@ export interface PlaceStop {
   startTime?: string;
   /** Length of the visit in minutes; only meaningful alongside `startTime`. */
   durationMinutes?: number;
+  /** Cost for this stop (entry fee, meal, etc.) in the trip's `currency`. */
+  cost?: number;
 }
 
 export interface ItineraryDay {
@@ -57,6 +59,8 @@ export interface Itinerary {
   days: ItineraryDay[];
   createdAt: string;
   updatedAt: string;
+  /** ISO 4217 currency code for stop/accommodation costs; defaults to "USD". */
+  currency?: string;
 }
 
 export function toDateInputValue(date: Date): string {

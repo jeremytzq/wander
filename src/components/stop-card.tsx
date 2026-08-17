@@ -3,32 +3,61 @@
 import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { AlertTriangle, Clock, GripVertical, MapPin, Star, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Clock,
+  DollarSign,
+  GripVertical,
+  MapPin,
+  Star,
+  X,
+} from "lucide-react";
 import { PlaceStop } from "@/types/itinerary";
 import { describeHoursForDay } from "@/lib/opening-hours";
 import { formatTime12 } from "@/lib/schedule";
+import { formatCurrency } from "@/lib/currency";
+import { useItinerary } from "@/store/itinerary-context";
 
 interface StopCardProps {
   stop: PlaceStop;
+  dayId: string;
   index: number;
   isFocused: boolean;
   color: string;
   weekday: number;
+  currency: string;
   onRemove: () => void;
   readOnly?: boolean;
 }
 
 export function StopCard({
   stop,
+  dayId,
   index,
   isFocused,
   color,
   weekday,
+  currency,
   onRemove,
   readOnly,
 }: StopCardProps) {
+  const { dispatch } = useItinerary();
   const hours = describeHoursForDay(stop.openingHours, weekday);
   const [imgError, setImgError] = useState(false);
+  const [editingCost, setEditingCost] = useState(false);
+  const [costDraft, setCostDraft] = useState(
+    stop.cost != null ? String(stop.cost) : ""
+  );
+
+  function commitCost() {
+    setEditingCost(false);
+    const parsed = costDraft.trim() === "" ? null : Number(costDraft);
+    const cost = parsed != null && Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    if (cost !== (stop.cost ?? null)) {
+      dispatch({ type: "SET_STOP_COST", dayId, stopId: stop.id, cost });
+    }
+    setCostDraft(cost != null ? String(cost) : "");
+  }
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: stop.id, disabled: readOnly });
 
@@ -88,6 +117,42 @@ export function StopCard({
           <span className="truncate">{stop.address}</span>
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          {editingCost ? (
+            <input
+              autoFocus
+              type="number"
+              min="0"
+              step="0.01"
+              value={costDraft}
+              onChange={(e) => setCostDraft(e.target.value)}
+              onBlur={commitCost}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+              placeholder="0"
+              className="w-16 rounded-full border border-emerald-300 px-2 py-0.5 text-[11px] outline-none"
+            />
+          ) : stop.cost != null ? (
+            <button
+              type="button"
+              onClick={() => !readOnly && setEditingCost(true)}
+              disabled={readOnly}
+              className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:hover:bg-emerald-50"
+            >
+              {formatCurrency(stop.cost, currency)}
+            </button>
+          ) : (
+            !readOnly && (
+              <button
+                type="button"
+                onClick={() => setEditingCost(true)}
+                className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600"
+              >
+                <DollarSign className="h-2.5 w-2.5" />
+                Cost
+              </button>
+            )
+          )}
           {stop.startTime && (
             <p className="inline-flex items-center gap-0.5 rounded-full bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700">
               <Clock className="h-2.5 w-2.5" />

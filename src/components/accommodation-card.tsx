@@ -1,22 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { Bed, Star, X } from "lucide-react";
+import { Bed, DollarSign, Star, X } from "lucide-react";
 import { ItineraryDay, PlaceStop } from "@/types/itinerary";
 import { PlaceSearch } from "@/components/place-search";
 import { useItinerary } from "@/store/itinerary-context";
+import { formatCurrency } from "@/lib/currency";
 
 interface AccommodationCardProps {
   day: ItineraryDay;
+  currency: string;
   readOnly?: boolean;
 }
 
 /** Pinned at the bottom of a day card: where you're staying that night,
  * kept separate from the day's regular stops. */
-export function AccommodationCard({ day, readOnly }: AccommodationCardProps) {
+export function AccommodationCard({ day, currency, readOnly }: AccommodationCardProps) {
   const { dispatch } = useItinerary();
   const [open, setOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [editingCost, setEditingCost] = useState(false);
+  const stay = day.accommodation;
+  const [costDraft, setCostDraft] = useState(
+    stay?.cost != null ? String(stay.cost) : ""
+  );
+
+  function commitCost() {
+    setEditingCost(false);
+    if (!stay) return;
+    const parsed = costDraft.trim() === "" ? null : Number(costDraft);
+    const cost = parsed != null && Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+    if (cost !== (stay.cost ?? null)) {
+      dispatch({ type: "SET_STOP_COST", dayId: day.id, stopId: stay.id, cost });
+    }
+    setCostDraft(cost != null ? String(cost) : "");
+  }
 
   function handleSelect(place: Omit<PlaceStop, "id">) {
     dispatch({
@@ -34,8 +52,6 @@ export function AccommodationCard({ day, readOnly }: AccommodationCardProps) {
       accommodation: null,
     });
   }
-
-  const stay = day.accommodation;
 
   if (stay) {
     return (
@@ -63,12 +79,50 @@ export function AccommodationCard({ day, readOnly }: AccommodationCardProps) {
             {stay.name}
           </p>
           <p className="truncate text-xs text-neutral-500">{stay.address}</p>
-          {typeof stay.rating === "number" && (
-            <p className="mt-0.5 inline-flex items-center gap-0.5 text-[11px] font-medium text-amber-700">
-              <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
-              {stay.rating.toFixed(1)}
-            </p>
-          )}
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+            {typeof stay.rating === "number" && (
+              <p className="inline-flex items-center gap-0.5 text-[11px] font-medium text-amber-700">
+                <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
+                {stay.rating.toFixed(1)}
+              </p>
+            )}
+            {editingCost ? (
+              <input
+                autoFocus
+                type="number"
+                min="0"
+                step="0.01"
+                value={costDraft}
+                onChange={(e) => setCostDraft(e.target.value)}
+                onBlur={commitCost}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") e.currentTarget.blur();
+                }}
+                placeholder="0"
+                className="w-16 rounded-full border border-emerald-300 px-2 py-0.5 text-[11px] outline-none"
+              />
+            ) : stay.cost != null ? (
+              <button
+                type="button"
+                onClick={() => !readOnly && setEditingCost(true)}
+                disabled={readOnly}
+                className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 transition-colors hover:bg-emerald-100 disabled:hover:bg-emerald-50"
+              >
+                {formatCurrency(stay.cost, currency)}
+              </button>
+            ) : (
+              !readOnly && (
+                <button
+                  type="button"
+                  onClick={() => setEditingCost(true)}
+                  className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-medium text-indigo-400 transition-colors hover:bg-indigo-100 hover:text-indigo-600"
+                >
+                  <DollarSign className="h-2.5 w-2.5" />
+                  Cost
+                </button>
+              )
+            )}
+          </div>
         </div>
 
         {!readOnly && (

@@ -14,10 +14,12 @@ import {
   Plus,
   Sparkles,
   UserRound,
+  Wallet,
   X,
 } from "lucide-react";
 import { useItinerary } from "@/store/itinerary-context";
 import { Itinerary, createEmptyItinerary } from "@/types/itinerary";
+import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from "@/lib/currency";
 import { createShareLink, deleteItinerary, listItineraries } from "@/lib/storage";
 import {
   deleteAccountItinerary,
@@ -111,6 +113,24 @@ export function SaveShareBar() {
           }}
           className="bg-transparent text-sm text-neutral-700 outline-none disabled:text-neutral-400"
         />
+      </label>
+
+      <label className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 py-1.5 pl-2.5 pr-1.5 text-sm text-neutral-600">
+        <Wallet className="h-3.5 w-3.5 text-neutral-400" />
+        <select
+          value={itinerary.currency || DEFAULT_CURRENCY}
+          disabled={readOnly}
+          onChange={(e) =>
+            dispatch({ type: "SET_CURRENCY", currency: e.target.value })
+          }
+          className="bg-transparent text-sm text-neutral-700 outline-none disabled:text-neutral-400"
+        >
+          {CURRENCY_OPTIONS.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
       </label>
 
       {readOnly ? (

@@ -32,11 +32,7 @@ export function AppShell({ initialItinerary, initialReadOnly }: AppShellProps) {
         <AccountSync />
         <div className="flex h-dvh flex-col bg-neutral-50">
           <SaveShareBar />
-          <section
-            className={`flex flex-shrink-0 flex-col border-b border-neutral-200 bg-white/70 p-4 shadow-sm backdrop-blur-sm ${
-              viewMode === "calendar" ? "h-[560px]" : "h-[400px]"
-            }`}
-          >
+          <section className="flex min-h-0 flex-[2] flex-col border-b border-neutral-200 bg-white/70 p-4 shadow-sm backdrop-blur-sm">
             <div className="mb-2 flex flex-shrink-0 justify-end">
               <div className="inline-flex items-center gap-0.5 rounded-full bg-neutral-100 p-0.5">
                 <button

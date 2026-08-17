@@ -29,6 +29,8 @@ import { AccommodationCard } from "@/components/accommodation-card";
 import { useItinerary } from "@/store/itinerary-context";
 import { colorForDay, resolveDayCountry } from "@/lib/country-colors";
 import { describeHoursForDay } from "@/lib/opening-hours";
+import { dayTotal } from "@/lib/budget";
+import { formatCurrency } from "@/lib/currency";
 import {
   ReorderSuggestion,
   SpreadWarning,
@@ -44,6 +46,7 @@ interface DayColumnProps {
   canRemove: boolean;
   countryColors: Map<string, string>;
   existingCountries: string[];
+  currency: string;
 }
 
 export function DayColumn({
@@ -55,6 +58,7 @@ export function DayColumn({
   canRemove,
   countryColors,
   existingCountries,
+  currency,
 }: DayColumnProps) {
   const { dispatch, readOnly } = useItinerary();
   const { setNodeRef: setDroppableRef } = useDroppable({ id: `day:${day.id}` });
@@ -77,6 +81,7 @@ export function DayColumn({
   const closedCount = day.stops.filter(
     (s) => describeHoursForDay(s.openingHours, weekday).status === "closed"
   ).length;
+  const total = dayTotal(day);
   const routeSuggestions = useMemo(() => analyzeDayRoute(day), [day]);
   const reorderSuggestion = routeSuggestions.find(
     (s): s is ReorderSuggestion => s.type === "reorder"
@@ -184,12 +189,19 @@ export function DayColumn({
           existingCountries={existingCountries}
           readOnly={readOnly}
         />
-        {closedCount > 0 && (
-          <span className="flex flex-shrink-0 items-center gap-1 rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600 ring-1 ring-red-200">
-            <AlertTriangle className="h-3 w-3" />
-            {closedCount} closed
-          </span>
-        )}
+        <div className="flex flex-shrink-0 items-center gap-1.5">
+          {total > 0 && (
+            <span className="rounded-full bg-emerald-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700">
+              {formatCurrency(total, currency)}
+            </span>
+          )}
+          {closedCount > 0 && (
+            <span className="flex items-center gap-1 rounded-full bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-600 ring-1 ring-red-200">
+              <AlertTriangle className="h-3 w-3" />
+              {closedCount} closed
+            </span>
+          )}
+        </div>
       </div>
 
       {reorderSuggestion && !readOnly && (
@@ -241,10 +253,12 @@ export function DayColumn({
             <div key={stop.id}>
               <StopCard
                 stop={stop}
+                dayId={day.id}
                 index={index}
                 isFocused={isFocused}
                 color={dayColor}
                 weekday={weekday}
+                currency={currency}
                 readOnly={readOnly}
                 onRemove={() =>
                   dispatch({ type: "REMOVE_STOP", dayId: day.id, stopId: stop.id })
@@ -259,7 +273,7 @@ export function DayColumn({
       </div>
 
       <div className="mt-2 flex-shrink-0">
-        <AccommodationCard day={day} readOnly={readOnly} />
+        <AccommodationCard day={day} currency={currency} readOnly={readOnly} />
       </div>
     </section>
   );

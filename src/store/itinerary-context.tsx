@@ -46,6 +46,8 @@ type Action =
       stopId: string;
       time: { startTime: string; durationMinutes: number } | null;
     }
+  | { type: "SET_STOP_COST"; dayId: string; stopId: string; cost: number | null }
+  | { type: "SET_CURRENCY"; currency: string }
   | { type: "SET_FOCUSED_DAY"; dayId: string | null }
   | { type: "SET_START_DATE"; startDate: string }
   | {
@@ -244,6 +246,29 @@ function reducer(state: State, action: Action): State {
       );
       return { ...state, itinerary: touch({ ...state.itinerary, days }) };
     }
+    case "SET_STOP_COST": {
+      const days = state.itinerary.days.map((d) => {
+        if (d.id !== action.dayId) return d;
+        if (d.accommodation?.id === action.stopId) {
+          return {
+            ...d,
+            accommodation: { ...d.accommodation, cost: action.cost ?? undefined },
+          };
+        }
+        return {
+          ...d,
+          stops: d.stops.map((s) =>
+            s.id === action.stopId ? { ...s, cost: action.cost ?? undefined } : s
+          ),
+        };
+      });
+      return { ...state, itinerary: touch({ ...state.itinerary, days }) };
+    }
+    case "SET_CURRENCY":
+      return {
+        ...state,
+        itinerary: touch({ ...state.itinerary, currency: action.currency }),
+      };
     default:
       return state;
   }

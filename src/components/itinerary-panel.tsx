@@ -14,7 +14,7 @@ import {
   arrayMove,
   horizontalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { AlertTriangle, MapPin, Plus, X } from "lucide-react";
+import { AlertTriangle, MapPin, Plus, Wallet, X } from "lucide-react";
 import { useItinerary } from "@/store/itinerary-context";
 import { DayColumn } from "@/components/day-column";
 import { PlaceSearch } from "@/components/place-search";
@@ -22,6 +22,8 @@ import { RouteLeg } from "@/components/map/day-route";
 import { PlaceStop, addDaysToDateString } from "@/types/itinerary";
 import { buildCountryColorMap, buildDayLegend } from "@/lib/country-colors";
 import { WEEKDAY_NAMES, describeHoursForDay } from "@/lib/opening-hours";
+import { tripTotal } from "@/lib/budget";
+import { DEFAULT_CURRENCY, formatCurrency } from "@/lib/currency";
 
 interface ItineraryPanelProps {
   legs: RouteLeg[];
@@ -44,6 +46,8 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
     () => Array.from(countryColors.keys()),
     [countryColors]
   );
+  const currency = itinerary.currency || DEFAULT_CURRENCY;
+  const total = useMemo(() => tripTotal(itinerary), [itinerary]);
 
   const focusedDay =
     itinerary.days.find((d) => d.id === focusedDayId) ?? itinerary.days[0];
@@ -151,22 +155,30 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
               {focusedDay?.label ?? "…"}
             </span>
           </p>
-          {legend.length > 1 && (
-            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              {legend.map(([country, color]) => (
-                <span
-                  key={country}
-                  className="flex items-center gap-1 text-xs font-medium text-neutral-500"
-                >
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {legend.length > 1 && (
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                {legend.map(([country, color]) => (
                   <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: color }}
-                  />
-                  {country}
-                </span>
-              ))}
-            </div>
-          )}
+                    key={country}
+                    className="flex items-center gap-1 text-xs font-medium text-neutral-500"
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
+                    {country}
+                  </span>
+                ))}
+              </div>
+            )}
+            {total > 0 && (
+              <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700">
+                <Wallet className="h-3 w-3" />
+                {formatCurrency(total, currency)} total
+              </span>
+            )}
+          </div>
         </div>
         <PlaceSearch
           onPlaceSelected={handleAddPlace}
@@ -209,6 +221,7 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
                 canRemove={itinerary.days.length > 1}
                 countryColors={countryColors}
                 existingCountries={existingCountries}
+                currency={currency}
               />
             ))}
           </SortableContext>
