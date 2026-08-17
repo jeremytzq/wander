@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { customAlphabet } from "nanoid";
 import { Itinerary } from "@/types/itinerary";
 import { isShareStoreConfigured, saveSharedItinerary } from "@/lib/share-store";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Unambiguous alphabet (no 0/O/1/I/l) since these ids may end up read aloud
 // or typed by hand.
@@ -28,6 +29,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "Short links aren't configured on this deployment." },
       { status: 503 }
+    );
+  }
+
+  const rateLimit = await checkRateLimit(request, "share", {
+    anon: { tokens: 10, window: "10 m" },
+    user: { tokens: 30, window: "10 m" },
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
     );
   }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateItinerary, isAiGenerationConfigured } from "@/lib/ai/generate-itinerary";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Generation involves a Claude call plus several parallel Places API
 // lookups; give it more room than the platform's default function timeout.
@@ -12,6 +13,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "AI itinerary generation isn't configured on this deployment." },
       { status: 503 }
+    );
+  }
+
+  const rateLimit = await checkRateLimit(request, "generate-itinerary", {
+    anon: { tokens: 5, window: "1 h" },
+    user: { tokens: 20, window: "1 h" },
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
     );
   }
 

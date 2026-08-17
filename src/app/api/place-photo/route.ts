@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 // Only a Places API (New) photo resource path, e.g.
 // "places/ChIJ.../photos/AUacm...". Guards against the `name` query param
@@ -14,6 +15,16 @@ const PHOTO_NAME_PATTERN = /^places\/[^/]+\/photos\/[^/]+$/;
  * unrestricted server key).
  */
 export async function GET(request: NextRequest) {
+  const rateLimit = await checkRateLimit(request, "place-photo", {
+    anon: { tokens: 200, window: "5 m" },
+  });
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
+    );
+  }
+
   const name = request.nextUrl.searchParams.get("name");
   const key = process.env.GOOGLE_PLACES_SERVER_API_KEY;
 

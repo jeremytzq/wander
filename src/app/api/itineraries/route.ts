@@ -6,6 +6,12 @@ import {
   listUserItineraries,
   saveUserItinerary,
 } from "@/lib/user-itineraries-store";
+import { checkRateLimit } from "@/lib/rate-limit";
+
+const ITINERARIES_LIMITS = {
+  anon: { tokens: 10, window: "1 h" as const },
+  user: { tokens: 60, window: "1 h" as const },
+};
 
 const MAX_PAYLOAD_BYTES = 300_000; // generous headroom over any real itinerary
 
@@ -20,7 +26,7 @@ function isValidItinerary(value: unknown): value is Itinerary {
   );
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
@@ -29,6 +35,14 @@ export async function GET() {
     return NextResponse.json(
       { error: "Account sync isn't configured on this deployment." },
       { status: 503 }
+    );
+  }
+
+  const rateLimit = await checkRateLimit(request, "itineraries", ITINERARIES_LIMITS);
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
     );
   }
 
@@ -52,6 +66,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: "Account sync isn't configured on this deployment." },
       { status: 503 }
+    );
+  }
+
+  const rateLimit = await checkRateLimit(request, "itineraries", ITINERARIES_LIMITS);
+  if (!rateLimit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
     );
   }
 
