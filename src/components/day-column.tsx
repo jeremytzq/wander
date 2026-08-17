@@ -273,7 +273,12 @@ export function DayColumn({
       </div>
 
       <div className="mt-2 flex-shrink-0">
-        <AccommodationCard day={day} currency={currency} readOnly={readOnly} />
+        <AccommodationCard
+          day={day}
+          weekday={weekday}
+          currency={currency}
+          readOnly={readOnly}
+        />
       </div>
     </section>
   );

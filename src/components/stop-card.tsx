@@ -17,6 +17,7 @@ import { describeHoursForDay } from "@/lib/opening-hours";
 import { formatTime12 } from "@/lib/schedule";
 import { formatCurrency } from "@/lib/currency";
 import { useItinerary } from "@/store/itinerary-context";
+import { PlaceDetailsModal } from "@/components/place-details-modal";
 
 interface StopCardProps {
   stop: PlaceStop;
@@ -44,6 +45,7 @@ export function StopCard({
   const { dispatch } = useItinerary();
   const hours = describeHoursForDay(stop.openingHours, weekday);
   const [imgError, setImgError] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [editingCost, setEditingCost] = useState(false);
   const [costDraft, setCostDraft] = useState(
     stop.cost != null ? String(stop.cost) : ""
@@ -109,13 +111,15 @@ export function StopCard({
       </div>
 
       <div className="min-w-0 flex-1 py-0.5">
-        <p className="break-words text-sm font-medium leading-snug text-neutral-900">
-          {stop.name}
-        </p>
-        <p className="mt-0.5 flex items-start gap-1 text-xs text-neutral-500">
-          <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0 text-neutral-300" />
-          <span className="break-words">{stop.address}</span>
-        </p>
+        <button
+          type="button"
+          onClick={() => setShowDetails(true)}
+          className="block w-full text-left"
+        >
+          <p className="break-words text-sm font-medium leading-snug text-neutral-900 underline decoration-neutral-200 decoration-dotted underline-offset-2 hover:text-blue-700 hover:decoration-blue-300">
+            {stop.name}
+          </p>
+        </button>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           {editingCost ? (
             <input
@@ -189,6 +193,15 @@ export function StopCard({
         >
           <X className="h-3.5 w-3.5" />
         </button>
+      )}
+
+      {showDetails && (
+        <PlaceDetailsModal
+          place={stop}
+          weekday={weekday}
+          currency={currency}
+          onClose={() => setShowDetails(false)}
+        />
       )}
     </div>
   );

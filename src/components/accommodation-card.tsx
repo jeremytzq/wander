@@ -6,18 +6,21 @@ import { ItineraryDay, PlaceStop } from "@/types/itinerary";
 import { PlaceSearch } from "@/components/place-search";
 import { useItinerary } from "@/store/itinerary-context";
 import { formatCurrency } from "@/lib/currency";
+import { PlaceDetailsModal } from "@/components/place-details-modal";
 
 interface AccommodationCardProps {
   day: ItineraryDay;
+  weekday: number;
   currency: string;
   readOnly?: boolean;
 }
 
 /** Pinned at the bottom of a day card: where you're staying that night,
  * kept separate from the day's regular stops. */
-export function AccommodationCard({ day, currency, readOnly }: AccommodationCardProps) {
+export function AccommodationCard({ day, weekday, currency, readOnly }: AccommodationCardProps) {
   const { dispatch } = useItinerary();
   const [open, setOpen] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [editingCost, setEditingCost] = useState(false);
   const stay = day.accommodation;
@@ -75,10 +78,15 @@ export function AccommodationCard({ day, currency, readOnly }: AccommodationCard
             <Bed className="h-2.5 w-2.5" />
             Staying here
           </p>
-          <p className="break-words text-sm font-medium leading-snug text-neutral-900">
-            {stay.name}
-          </p>
-          <p className="break-words text-xs text-neutral-500">{stay.address}</p>
+          <button
+            type="button"
+            onClick={() => setShowDetails(true)}
+            className="block w-full text-left"
+          >
+            <p className="break-words text-sm font-medium leading-snug text-neutral-900 underline decoration-indigo-200 decoration-dotted underline-offset-2 hover:text-indigo-700 hover:decoration-indigo-400">
+              {stay.name}
+            </p>
+          </button>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             {typeof stay.rating === "number" && (
               <p className="inline-flex items-center gap-0.5 text-[11px] font-medium text-amber-700">
@@ -134,6 +142,16 @@ export function AccommodationCard({ day, currency, readOnly }: AccommodationCard
           >
             <X className="h-3.5 w-3.5" />
           </button>
+        )}
+
+        {showDetails && (
+          <PlaceDetailsModal
+            place={stay}
+            weekday={weekday}
+            currency={currency}
+            isAccommodation
+            onClose={() => setShowDetails(false)}
+          />
         )}
       </div>
     );

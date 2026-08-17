@@ -50,6 +50,18 @@ export interface DayHoursInfo {
   text: string;
 }
 
+function periodsTextForDay(hours: OpeningHours, weekday: number): string | null {
+  const periodsForDay = hours.periods.filter((p) => p.openDay === weekday);
+  if (periodsForDay.length === 0) return null;
+  return periodsForDay
+    .map((p) =>
+      p.closeTime
+        ? `${formatTime(p.openTime)} – ${formatTime(p.closeTime)}`
+        : `From ${formatTime(p.openTime)}`
+    )
+    .join(", ");
+}
+
 /** Describes a place's hours for a specific weekday (0=Sunday..6=Saturday). */
 export function describeHoursForDay(
   hours: OpeningHours | undefined,
@@ -58,17 +70,23 @@ export function describeHoursForDay(
   if (!hours) return { status: "unknown", text: "" };
   if (hours.alwaysOpen) return { status: "open", text: "Open 24 hours" };
 
-  const periodsForDay = hours.periods.filter((p) => p.openDay === weekday);
-  if (periodsForDay.length === 0) {
+  const text = periodsTextForDay(hours, weekday);
+  if (text === null) {
     return { status: "closed", text: `Closed on ${WEEKDAY_NAMES[weekday]}s` };
   }
-
-  const text = periodsForDay
-    .map((p) =>
-      p.closeTime
-        ? `${formatTime(p.openTime)} – ${formatTime(p.closeTime)}`
-        : `From ${formatTime(p.openTime)}`
-    )
-    .join(", ");
   return { status: "open", text };
+}
+
+/** Full Sunday–Saturday hours breakdown, for a detailed place view. */
+export function describeWeeklyHours(
+  hours: OpeningHours | undefined
+): { day: string; text: string }[] | null {
+  if (!hours) return null;
+  if (hours.alwaysOpen) {
+    return WEEKDAY_NAMES.map((day) => ({ day, text: "Open 24 hours" }));
+  }
+  return WEEKDAY_NAMES.map((day, i) => ({
+    day,
+    text: periodsTextForDay(hours, i) ?? "Closed",
+  }));
 }
