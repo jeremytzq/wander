@@ -109,12 +109,12 @@ export function StopCard({
       </div>
 
       <div className="min-w-0 flex-1 py-0.5">
-        <p className="truncate text-sm font-medium text-neutral-900">
+        <p className="break-words text-sm font-medium leading-snug text-neutral-900">
           {stop.name}
         </p>
-        <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-neutral-500">
-          <MapPin className="h-3 w-3 flex-shrink-0 text-neutral-300" />
-          <span className="truncate">{stop.address}</span>
+        <p className="mt-0.5 flex items-start gap-1 text-xs text-neutral-500">
+          <MapPin className="mt-0.5 h-3 w-3 flex-shrink-0 text-neutral-300" />
+          <span className="break-words">{stop.address}</span>
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
           {editingCost ? (

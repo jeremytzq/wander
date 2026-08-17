@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Sparkles, X } from "lucide-react";
+import { KeyRound, Loader2, Sparkles, X } from "lucide-react";
 import { useItinerary } from "@/store/itinerary-context";
 import { Itinerary } from "@/types/itinerary";
 
@@ -9,14 +9,40 @@ interface GenerateItineraryModalProps {
   onClose: () => void;
 }
 
+// Stored only in the browser; sent per-request, never persisted server-side.
+const API_KEY_STORAGE_KEY = "wander:anthropicApiKey";
+
 export function GenerateItineraryModal({ onClose }: GenerateItineraryModalProps) {
   const { dispatch } = useItinerary();
   const [destination, setDestination] = useState("");
   const [days, setDays] = useState(3);
   const [interests, setInterests] = useState("");
   const [startDate, setStartDate] = useState("");
+  const [apiKey, setApiKey] = useState(() =>
+    typeof window === "undefined"
+      ? ""
+      : localStorage.getItem(API_KEY_STORAGE_KEY) ?? ""
+  );
+  const [useOwnKey, setUseOwnKey] = useState(() => !!apiKey);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function handleApiKeyChange(value: string) {
+    setApiKey(value);
+    if (value.trim()) {
+      localStorage.setItem(API_KEY_STORAGE_KEY, value.trim());
+    } else {
+      localStorage.removeItem(API_KEY_STORAGE_KEY);
+    }
+  }
+
+  function handleUseOwnKeyToggle(checked: boolean) {
+    setUseOwnKey(checked);
+    if (!checked) {
+      setApiKey("");
+      localStorage.removeItem(API_KEY_STORAGE_KEY);
+    }
+  }
 
   async function handleGenerate() {
     if (!destination.trim() || working) return;
@@ -31,6 +57,7 @@ export function GenerateItineraryModal({ onClose }: GenerateItineraryModalProps)
           days,
           interests: interests || undefined,
           startDate: startDate || undefined,
+          apiKey: useOwnKey && apiKey.trim() ? apiKey.trim() : undefined,
         }),
       });
       const data = await res.json();
@@ -126,6 +153,38 @@ export function GenerateItineraryModal({ onClose }: GenerateItineraryModalProps)
               rows={2}
               className="w-full resize-none rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-violet-400 disabled:bg-neutral-50"
             />
+          </div>
+
+          <div className="rounded-lg border border-neutral-200 p-2.5">
+            <label className="flex cursor-pointer items-center gap-2 text-xs font-medium text-neutral-600">
+              <input
+                type="checkbox"
+                checked={useOwnKey}
+                onChange={(e) => handleUseOwnKeyToggle(e.target.checked)}
+                disabled={working}
+                className="h-3.5 w-3.5 rounded border-neutral-300 text-violet-600 focus:ring-violet-400"
+              />
+              <KeyRound className="h-3.5 w-3.5 text-neutral-400" />
+              Use my own Anthropic API key
+            </label>
+            {useOwnKey && (
+              <>
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => handleApiKeyChange(e.target.value)}
+                  placeholder="sk-ant-…"
+                  disabled={working}
+                  autoComplete="off"
+                  className="mt-2 w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-violet-400 disabled:bg-neutral-50"
+                />
+                <p className="mt-1 text-[11px] leading-snug text-neutral-400">
+                  Stored only in this browser and sent directly with each
+                  generation request — usage is billed to your own Anthropic
+                  account, not ours.
+                </p>
+              </>
+            )}
           </div>
         </div>
 

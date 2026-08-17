@@ -4,10 +4,12 @@ import { useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import {
   Calendar,
+  CalendarDays,
   Check,
   Compass,
   Eye,
   FolderOpen,
+  LayoutGrid,
   LogIn,
   Link2,
   Loader2,
@@ -26,8 +28,14 @@ import {
   fetchAccountItineraries,
 } from "@/lib/account-sync";
 import { GenerateItineraryModal } from "@/components/generate-itinerary-modal";
+import type { ViewMode } from "@/components/app-shell";
 
-export function SaveShareBar() {
+interface SaveShareBarProps {
+  viewMode: ViewMode;
+  onViewModeChange: (mode: ViewMode) => void;
+}
+
+export function SaveShareBar({ viewMode, onViewModeChange }: SaveShareBarProps) {
   const { itinerary, readOnly, dispatch } = useItinerary();
   const { data: session, status: sessionStatus } = useSession();
   const isSignedIn = sessionStatus === "authenticated";
@@ -78,17 +86,17 @@ export function SaveShareBar() {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3 border-b border-neutral-200 bg-white px-4 py-2.5 shadow-sm">
-      <div className="flex flex-shrink-0 items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
-          <Compass className="h-4 w-4" strokeWidth={2.25} />
+    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-200 bg-white px-3 py-1.5 shadow-sm">
+      <div className="flex flex-shrink-0 items-center gap-1.5">
+        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-sm">
+          <Compass className="h-3.5 w-3.5" strokeWidth={2.25} />
         </div>
         <span className="hidden text-sm font-semibold tracking-tight text-neutral-800 sm:inline">
           Wander
         </span>
       </div>
 
-      <div className="h-6 w-px flex-shrink-0 bg-neutral-200" />
+      <div className="h-5 w-px flex-shrink-0 bg-neutral-200" />
 
       <input
         value={itinerary.name}
@@ -97,10 +105,10 @@ export function SaveShareBar() {
           dispatch({ type: "RENAME_ITINERARY", name: e.target.value })
         }
         placeholder="Untitled trip"
-        className="min-w-0 flex-1 rounded-lg border border-transparent px-2 py-1.5 text-lg font-semibold text-neutral-900 transition-colors hover:border-neutral-200 focus:border-blue-400 focus:bg-blue-50/40 focus:outline-none disabled:bg-transparent disabled:hover:border-transparent"
+        className="min-w-0 flex-1 rounded-lg border border-transparent px-2 py-1 text-base font-semibold text-neutral-900 transition-colors hover:border-neutral-200 focus:border-blue-400 focus:bg-blue-50/40 focus:outline-none disabled:bg-transparent disabled:hover:border-transparent"
       />
 
-      <label className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 py-1.5 pl-2.5 pr-2 text-sm text-neutral-600">
+      <label className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 py-1 pl-2 pr-1.5 text-sm text-neutral-600">
         <Calendar className="h-3.5 w-3.5 text-neutral-400" />
         <input
           type="date"
@@ -115,7 +123,7 @@ export function SaveShareBar() {
         />
       </label>
 
-      <label className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 py-1.5 pl-2.5 pr-1.5 text-sm text-neutral-600">
+      <label className="hidden flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 py-1 pl-2 pr-1 text-sm text-neutral-600 md:flex">
         <Wallet className="h-3.5 w-3.5 text-neutral-400" />
         <select
           value={itinerary.currency || DEFAULT_CURRENCY}
@@ -133,8 +141,39 @@ export function SaveShareBar() {
         </select>
       </label>
 
+      <div className="inline-flex flex-shrink-0 items-center gap-0.5 rounded-full bg-neutral-100 p-0.5">
+        <button
+          type="button"
+          onClick={() => onViewModeChange("board")}
+          aria-label="Board view"
+          title="Board view"
+          className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-colors ${
+            viewMode === "board"
+              ? "bg-white text-neutral-800 shadow-sm"
+              : "text-neutral-500 hover:text-neutral-700"
+          }`}
+        >
+          <LayoutGrid className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">Board</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onViewModeChange("calendar")}
+          aria-label="Calendar view"
+          title="Calendar view"
+          className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-colors ${
+            viewMode === "calendar"
+              ? "bg-white text-neutral-800 shadow-sm"
+              : "text-neutral-500 hover:text-neutral-700"
+          }`}
+        >
+          <CalendarDays className="h-3.5 w-3.5" />
+          <span className="hidden lg:inline">Calendar</span>
+        </button>
+      </div>
+
       {readOnly ? (
-        <div className="flex items-center gap-2 rounded-lg bg-amber-50 py-1.5 pl-2.5 pr-2 text-sm text-amber-800 ring-1 ring-amber-200">
+        <div className="flex items-center gap-2 rounded-lg bg-amber-50 py-1 pl-2.5 pr-2 text-sm text-amber-800 ring-1 ring-amber-200">
           <Eye className="h-3.5 w-3.5 flex-shrink-0" />
           <span className="hidden sm:inline">Viewing a shared itinerary</span>
           <button
@@ -152,10 +191,10 @@ export function SaveShareBar() {
                 refreshTrips();
                 setShowTrips((s) => !s);
               }}
-              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-2.5 py-1 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
             >
               <FolderOpen className="h-3.5 w-3.5 text-neutral-400" />
-              My trips
+              <span className="hidden md:inline">My trips</span>
             </button>
             {showTrips && (
               <>
@@ -207,18 +246,20 @@ export function SaveShareBar() {
 
           <button
             onClick={handleNewTrip}
-            className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+            aria-label="New trip"
+            title="New trip"
+            className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-2.5 py-1 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
           >
             <Plus className="h-3.5 w-3.5 text-neutral-400" />
-            New trip
+            <span className="hidden md:inline">New trip</span>
           </button>
 
           <button
             onClick={() => setShowGenerate(true)}
-            className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50/60 px-3 py-1.5 text-sm text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-50"
+            className="flex items-center gap-1.5 rounded-lg border border-violet-200 bg-violet-50/60 px-2.5 py-1 text-sm text-violet-700 transition-colors hover:border-violet-300 hover:bg-violet-50"
           >
             <Sparkles className="h-3.5 w-3.5 text-violet-500" />
-            Generate with AI
+            <span className="hidden md:inline">Generate with AI</span>
           </button>
         </>
       )}
@@ -231,7 +272,7 @@ export function SaveShareBar() {
         <div className="relative">
           <button
             onClick={() => setShowAccount((s) => !s)}
-            className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1.5 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 px-2 py-1 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
           >
             {session?.user?.image ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -273,7 +314,7 @@ export function SaveShareBar() {
       ) : (
         <button
           onClick={() => signIn("google")}
-          className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 px-3 py-1.5 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+          className="flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-neutral-200 px-2.5 py-1 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
         >
           <LogIn className="h-3.5 w-3.5 text-neutral-400" />
           Sign in
@@ -283,7 +324,7 @@ export function SaveShareBar() {
       <button
         onClick={handleShare}
         disabled={shareState === "working"}
-        className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-1.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
+        className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
       >
         {shareState === "working" ? (
           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -292,11 +333,13 @@ export function SaveShareBar() {
         ) : (
           <Link2 className="h-3.5 w-3.5" />
         )}
-        {shareState === "working"
-          ? "Creating link…"
-          : shareState === "copied"
-            ? "Link copied!"
-            : "Copy share link"}
+        <span className="hidden sm:inline">
+          {shareState === "working"
+            ? "Creating link…"
+            : shareState === "copied"
+              ? "Link copied!"
+              : "Copy share link"}
+        </span>
       </button>
     </div>
   );

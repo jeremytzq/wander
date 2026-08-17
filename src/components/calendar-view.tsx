@@ -367,9 +367,9 @@ function TimeEditModal({ stop, onClose, onSave, onClear }: TimeEditModalProps) {
       />
       <div className="fixed left-1/2 top-1/2 z-40 w-72 -translate-x-1/2 -translate-y-1/2 rounded-xl border border-neutral-200 bg-white p-4 shadow-xl">
         <div className="mb-3 flex items-start justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-sm font-semibold text-neutral-800">
-            <Clock className="h-4 w-4 flex-shrink-0 text-blue-500" />
-            <span className="truncate">{stop.name}</span>
+          <div className="flex items-start gap-1.5 text-sm font-semibold text-neutral-800">
+            <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
+            <span className="break-words">{stop.name}</span>
           </div>
           <button
             type="button"

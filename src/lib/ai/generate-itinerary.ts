@@ -6,8 +6,15 @@ import { isPlacesServerConfigured, searchPlaceText } from "./places-lookup";
 
 const anthropic = new Anthropic();
 
-export function isAiGenerationConfigured(): boolean {
-  return !!process.env.ANTHROPIC_API_KEY && isPlacesServerConfigured();
+/**
+ * `hasUserApiKey` covers the case where the caller supplied their own
+ * Anthropic API key at request time (see the `apiKey` field on
+ * GenerateItineraryInput) — generation is then usable even on a deployment
+ * with no server-side ANTHROPIC_API_KEY, as long as Places lookups are
+ * still configured.
+ */
+export function isAiGenerationConfigured(hasUserApiKey = false): boolean {
+  return (hasUserApiKey || !!process.env.ANTHROPIC_API_KEY) && isPlacesServerConfigured();
 }
 
 export interface GenerateItineraryInput {
@@ -15,6 +22,10 @@ export interface GenerateItineraryInput {
   days: number;
   interests?: string;
   startDate?: string;
+  /** When set, this key is used instead of the server's ANTHROPIC_API_KEY —
+   * the caller's own Claude usage is billed to them, not us. Never logged
+   * or persisted. */
+  apiKey?: string;
 }
 
 export interface GenerateItineraryResult {
@@ -97,7 +108,8 @@ async function planWithClaude(input: GenerateItineraryInput): Promise<PlannedTri
     .filter(Boolean)
     .join("\n");
 
-  const stream = anthropic.messages.stream({
+  const client = input.apiKey ? new Anthropic({ apiKey: input.apiKey }) : anthropic;
+  const stream = client.messages.stream({
     model: "claude-opus-5",
     max_tokens: 16000,
     system:

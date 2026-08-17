@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Anthropic from "@anthropic-ai/sdk";
 import { generateItinerary, isAiGenerationConfigured } from "@/lib/ai/generate-itinerary";
 import { checkRateLimit } from "@/lib/rate-limit";
 
@@ -9,7 +10,21 @@ export const maxDuration = 60;
 const MAX_DAYS = 14;
 
 export async function POST(request: NextRequest) {
-  if (!isAiGenerationConfigured()) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const { destination, days, interests, startDate, apiKey } = (body ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const userApiKey =
+    typeof apiKey === "string" && apiKey.trim() ? apiKey.trim() : undefined;
+
+  if (!isAiGenerationConfigured(!!userApiKey)) {
     return NextResponse.json(
       { error: "AI itinerary generation isn't configured on this deployment." },
       { status: 503 }
@@ -26,18 +41,6 @@ export async function POST(request: NextRequest) {
       { status: 429, headers: { "Retry-After": String(rateLimit.retryAfterSeconds) } }
     );
   }
-
-  let body: unknown;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Invalid JSON body." }, { status: 400 });
-  }
-
-  const { destination, days, interests, startDate } = (body ?? {}) as Record<
-    string,
-    unknown
-  >;
 
   if (typeof destination !== "string" || !destination.trim()) {
     return NextResponse.json({ error: "Destination is required." }, { status: 400 });
@@ -57,9 +60,16 @@ export async function POST(request: NextRequest) {
       days: dayCount,
       interests: typeof interests === "string" ? interests.trim() || undefined : undefined,
       startDate: typeof startDate === "string" && startDate ? startDate : undefined,
+      apiKey: userApiKey,
     });
     return NextResponse.json(result);
   } catch (err) {
+    if (err instanceof Anthropic.AuthenticationError) {
+      return NextResponse.json(
+        { error: "That Anthropic API key was rejected. Please check it and try again." },
+        { status: 401 }
+      );
+    }
     console.error("generateItinerary failed:", err);
     return NextResponse.json(
       { error: "Failed to generate an itinerary. Please try again." },

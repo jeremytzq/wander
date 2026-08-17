@@ -75,10 +75,10 @@ export function AccommodationCard({ day, currency, readOnly }: AccommodationCard
             <Bed className="h-2.5 w-2.5" />
             Staying here
           </p>
-          <p className="truncate text-sm font-medium text-neutral-900">
+          <p className="break-words text-sm font-medium leading-snug text-neutral-900">
             {stay.name}
           </p>
-          <p className="truncate text-xs text-neutral-500">{stay.address}</p>
+          <p className="break-words text-xs text-neutral-500">{stay.address}</p>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             {typeof stay.rating === "number" && (
               <p className="inline-flex items-center gap-0.5 text-[11px] font-medium text-amber-700">
