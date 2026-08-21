@@ -21,7 +21,6 @@ export function AccommodationCard({ day, weekday, currency, readOnly }: Accommod
   const { dispatch } = useItinerary();
   const [open, setOpen] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
-  const [imgError, setImgError] = useState(false);
   const [editingCost, setEditingCost] = useState(false);
   const stay = day.accommodation;
   const [costDraft, setCostDraft] = useState(
@@ -59,20 +58,6 @@ export function AccommodationCard({ day, weekday, currency, readOnly }: Accommod
   if (stay) {
     return (
       <div className="flex gap-2 rounded-xl border border-indigo-100 bg-indigo-50/60 p-2">
-        {stay.photoUrl && !imgError ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={stay.photoUrl}
-            alt=""
-            onError={() => setImgError(true)}
-            className="h-12 w-12 flex-shrink-0 rounded-lg object-cover ring-1 ring-inset ring-black/5"
-          />
-        ) : (
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100 ring-1 ring-inset ring-black/5">
-            <Bed className="h-5 w-5 text-indigo-400" />
-          </div>
-        )}
-
         <div className="min-w-0 flex-1 py-0.5">
           <p className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-indigo-500">
             <Bed className="h-2.5 w-2.5" />

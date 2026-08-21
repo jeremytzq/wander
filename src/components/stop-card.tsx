@@ -8,7 +8,6 @@ import {
   Clock,
   DollarSign,
   GripVertical,
-  MapPin,
   Star,
   X,
 } from "lucide-react";
@@ -44,7 +43,6 @@ export function StopCard({
 }: StopCardProps) {
   const { dispatch } = useItinerary();
   const hours = describeHoursForDay(stop.openingHours, weekday);
-  const [imgError, setImgError] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [editingCost, setEditingCost] = useState(false);
   const [costDraft, setCostDraft] = useState(
@@ -87,24 +85,11 @@ export function StopCard({
         </button>
       )}
 
-      <div className="relative h-14 w-14 flex-shrink-0">
-        {stop.photoUrl && !imgError ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={stop.photoUrl}
-            alt=""
-            onError={() => setImgError(true)}
-            className="h-14 w-14 rounded-lg object-cover ring-1 ring-inset ring-black/5"
-          />
-        ) : (
-          <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-gradient-to-br from-neutral-50 to-neutral-100 ring-1 ring-inset ring-black/5">
-            <MapPin className="h-5 w-5 text-neutral-300" />
-          </div>
-        )}
+      <div className="flex-shrink-0 pt-0.5">
         {/* Matches the number and color of this stop's pin on the map. */}
         <span
           style={{ backgroundColor: color, opacity: isFocused ? 1 : 0.65 }}
-          className="absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-bold text-white shadow-sm ring-2 ring-white"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-bold text-white shadow-sm"
         >
           {index + 1}
         </span>
