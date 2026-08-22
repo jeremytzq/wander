@@ -17,22 +17,28 @@ function haversineKm(a: LatLng, b: LatLng): number {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-function totalDistanceKm(stops: PlaceStop[]): number {
+function totalDistanceKm(points: LatLng[]): number {
   let total = 0;
-  for (let i = 0; i < stops.length - 1; i++) {
-    total += haversineKm(stops[i], stops[i + 1]);
+  for (let i = 0; i < points.length - 1; i++) {
+    total += haversineKm(points[i], points[i + 1]);
   }
   return total;
 }
 
-/** Greedy nearest-neighbor ordering, keeping the first stop fixed (it's
- * usually a deliberate starting point, e.g. the day's hotel) and reordering
- * the rest by closest-next. Straight-line distance, not driving distance. */
-function nearestNeighborOrder(stops: PlaceStop[]): PlaceStop[] {
-  if (stops.length <= 2) return stops;
-  const remaining = stops.slice(1);
-  const ordered = [stops[0]];
-  let current = stops[0];
+/** Greedy nearest-neighbor ordering. With an `anchor` (the previous day's
+ * accommodation — where the day actually starts from), every stop is free
+ * to be reordered around it. Without one, the first stop is kept fixed
+ * (it's usually a deliberate starting point) and the rest reordered by
+ * closest-next. Straight-line distance, not driving distance. */
+function nearestNeighborOrder(stops: PlaceStop[], anchor?: LatLng): PlaceStop[] {
+  if (!anchor && stops.length <= 2) return stops;
+  const remaining = stops.slice();
+  const ordered: PlaceStop[] = [];
+  let current: LatLng = anchor ?? stops[0];
+  if (!anchor) {
+    ordered.push(remaining[0]);
+    remaining.splice(0, 1);
+  }
   while (remaining.length > 0) {
     let bestIndex = 0;
     let bestDist = Infinity;
@@ -43,8 +49,9 @@ function nearestNeighborOrder(stops: PlaceStop[]): PlaceStop[] {
         bestIndex = i;
       }
     }
-    current = remaining[bestIndex];
-    ordered.push(current);
+    const next = remaining[bestIndex];
+    ordered.push(next);
+    current = next;
     remaining.splice(bestIndex, 1);
   }
   return ordered;
@@ -71,15 +78,25 @@ const SPREAD_THRESHOLD_KM = 60;
 
 /** Geometric (straight-line) route analysis for one day: whether a
  * different visiting order would meaningfully shorten the route, and
- * whether the stops are spread across a suspiciously large area. */
-export function analyzeDayRoute(day: ItineraryDay): RouteSuggestion[] {
+ * whether the stops are spread across a suspiciously large area.
+ * `startPoint` — the previous day's accommodation, if any — is treated as
+ * where the day actually begins, so reorder suggestions account for the
+ * drive from last night's hotel rather than assuming the day starts from
+ * nowhere. */
+export function analyzeDayRoute(
+  day: ItineraryDay,
+  startPoint?: PlaceStop
+): RouteSuggestion[] {
   const stops = day.stops;
   const suggestions: RouteSuggestion[] = [];
+  const anchor: LatLng | undefined = startPoint
+    ? { lat: startPoint.lat, lng: startPoint.lng }
+    : undefined;
 
-  if (stops.length >= 3) {
-    const currentKm = totalDistanceKm(stops);
-    const suggested = nearestNeighborOrder(stops);
-    const suggestedKm = totalDistanceKm(suggested);
+  if (stops.length >= (anchor ? 2 : 3)) {
+    const currentKm = totalDistanceKm(anchor ? [anchor, ...stops] : stops);
+    const suggested = nearestNeighborOrder(stops, anchor);
+    const suggestedKm = totalDistanceKm(anchor ? [anchor, ...suggested] : suggested);
     const savedKm = currentKm - suggestedKm;
     if (
       currentKm > 0 &&

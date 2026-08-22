@@ -82,14 +82,23 @@ function MapContent({ onLegsChange }: MapViewProps) {
   const allStops = itinerary.days.flatMap((d) =>
     d.accommodation ? [...d.stops, d.accommodation] : d.stops
   );
+  const focusedDayIndex = focusedDayId
+    ? itinerary.days.findIndex((d) => d.id === focusedDayId)
+    : 0;
   const focusedDay =
-    itinerary.days.find((d) => d.id === focusedDayId) ?? itinerary.days[0];
+    itinerary.days[focusedDayIndex] ?? itinerary.days[0];
+  // The previous night's accommodation, if any — used as the implicit start
+  // point for this day's route (you're leaving from there, not nowhere).
+  const startPoint =
+    focusedDayIndex > 0 ? itinerary.days[focusedDayIndex - 1]?.accommodation : undefined;
   // Zoom to whatever day is focused; fall back to the whole trip if it has
   // no stops yet so the view doesn't collapse to the empty default.
   const focusedDayStops = focusedDay
-    ? focusedDay.accommodation
-      ? [...focusedDay.stops, focusedDay.accommodation]
-      : focusedDay.stops
+    ? [
+        ...(startPoint ? [startPoint] : []),
+        ...focusedDay.stops,
+        ...(focusedDay.accommodation ? [focusedDay.accommodation] : []),
+      ]
     : [];
   const zoomTargetStops = focusedDayStops.length ? focusedDayStops : allStops;
   const zoomTargetIds = zoomTargetStops.map((s) => s.id).join(",");
@@ -144,7 +153,10 @@ function MapContent({ onLegsChange }: MapViewProps) {
           )
       )}
       {focusedDay && (
-        <DayRoute stops={focusedDay.stops} onLegsChange={onLegsChange} />
+        <DayRoute
+          stops={startPoint ? [startPoint, ...focusedDay.stops] : focusedDay.stops}
+          onLegsChange={onLegsChange}
+        />
       )}
       {selected && (
         <InfoWindow

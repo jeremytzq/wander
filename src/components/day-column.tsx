@@ -10,6 +10,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import {
   AlertTriangle,
+  Bed,
   GripVertical,
   MapPin,
   MapPinned,
@@ -18,6 +19,7 @@ import {
 } from "lucide-react";
 import {
   ItineraryDay,
+  PlaceStop,
   addDaysToDateString,
   formatDayDate,
 } from "@/types/itinerary";
@@ -47,6 +49,9 @@ interface DayColumnProps {
   countryColors: Map<string, string>;
   existingCountries: string[];
   currency: string;
+  /** Previous day's accommodation, if any — treated as this day's implicit
+   * starting point (that's where you woke up). */
+  startPoint?: PlaceStop;
 }
 
 export function DayColumn({
@@ -59,6 +64,7 @@ export function DayColumn({
   countryColors,
   existingCountries,
   currency,
+  startPoint,
 }: DayColumnProps) {
   const { dispatch, readOnly } = useItinerary();
   const { setNodeRef: setDroppableRef } = useDroppable({ id: `day:${day.id}` });
@@ -82,13 +88,20 @@ export function DayColumn({
     (s) => describeHoursForDay(s.openingHours, weekday).status === "closed"
   ).length;
   const total = dayTotal(day);
-  const routeSuggestions = useMemo(() => analyzeDayRoute(day), [day]);
+  const routeSuggestions = useMemo(
+    () => analyzeDayRoute(day, startPoint),
+    [day, startPoint]
+  );
   const reorderSuggestion = routeSuggestions.find(
     (s): s is ReorderSuggestion => s.type === "reorder"
   );
   const spreadWarning = routeSuggestions.find(
     (s): s is SpreadWarning => s.type === "spread"
   );
+  // The map's route (and therefore `legs`) is computed starting from
+  // startPoint when this day is focused, so leg 0 is startPoint→stops[0]
+  // and every inter-stop leg shifts up by one.
+  const legOffset = isFocused && startPoint ? 1 : 0;
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -234,10 +247,20 @@ export function DayColumn({
         </p>
       )}
 
+      {startPoint && (
+        <div className="mb-2 flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-indigo-50/60 px-2.5 py-1.5 text-[11px] font-medium text-indigo-600 ring-1 ring-indigo-100">
+          <Bed className="h-3 w-3 flex-shrink-0" />
+          <span className="truncate">Starting from {startPoint.name}</span>
+        </div>
+      )}
+
       <div
         ref={setDroppableRef}
         className="flex min-h-[3rem] flex-1 flex-col gap-2 overflow-y-auto"
       >
+        {startPoint && day.stops.length > 0 && (
+          <TravelTimeBadge leg={isFocused ? legs[0] : undefined} />
+        )}
         <SortableContext items={day.stops.map((s) => s.id)} strategy={verticalListSortingStrategy}>
           {day.stops.length === 0 && (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-200 p-4 text-center">
@@ -265,7 +288,9 @@ export function DayColumn({
                 }
               />
               {index < day.stops.length - 1 && (
-                <TravelTimeBadge leg={isFocused ? legs[index] : undefined} />
+                <TravelTimeBadge
+                  leg={isFocused ? legs[index + legOffset] : undefined}
+                />
               )}
             </div>
           ))}

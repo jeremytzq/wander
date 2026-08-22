@@ -222,6 +222,9 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
                 countryColors={countryColors}
                 existingCountries={existingCountries}
                 currency={currency}
+                startPoint={
+                  dayIndex > 0 ? itinerary.days[dayIndex - 1].accommodation : undefined
+                }
               />
             ))}
           </SortableContext>
