@@ -205,7 +205,7 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
+        <div className="flex min-h-0 flex-1 snap-x snap-proximity gap-3 overflow-x-auto pb-2">
           <SortableContext
             items={itinerary.days.map((d) => d.id)}
             strategy={horizontalListSortingStrategy}
@@ -232,7 +232,7 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
             <button
               type="button"
               onClick={() => dispatch({ type: "ADD_DAY" })}
-              className="flex w-24 flex-shrink-0 flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-neutral-200 text-sm text-neutral-400 transition-colors hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-600"
+              className="flex w-24 flex-shrink-0 snap-center flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-neutral-200 text-sm text-neutral-400 transition-colors hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-600"
             >
               <Plus className="h-4 w-4" />
               Add day

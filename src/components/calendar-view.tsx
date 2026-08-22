@@ -36,6 +36,7 @@ const WEEKDAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const HOURS = 24;
 const ROW_HEIGHT = 48; // px per hour
 const GUTTER_WIDTH = 44; // px
+const MIN_DAY_COL_WIDTH = 76; // px — keeps columns legible on narrow screens
 
 function startOfWeek(date: Date): Date {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -159,6 +160,11 @@ export function CalendarView({ onSelectDay }: CalendarViewProps) {
         </button>
       </div>
 
+      <div className="min-h-0 flex-1 overflow-x-auto">
+      <div
+        className="flex h-full min-h-0 flex-col"
+        style={{ minWidth: GUTTER_WIDTH + 7 * MIN_DAY_COL_WIDTH }}
+      >
       <div className="flex flex-shrink-0" style={{ paddingLeft: GUTTER_WIDTH }}>
         {weekDates.map((date) => {
           const key = toDateInputValue(date);
@@ -286,6 +292,8 @@ export function CalendarView({ onSelectDay }: CalendarViewProps) {
             );
           })}
         </div>
+      </div>
+      </div>
       </div>
 
       {editing && (

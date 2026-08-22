@@ -15,6 +15,27 @@ export const PALETTE = [
 
 export const DEFAULT_COLOR = "#78716c"; // neutral, used when no country is known
 
+/** A day's own accent color, purely by position (Day 1, Day 2, ...) rather
+ * than country — so consecutive days in the same country still read as
+ * visually distinct columns. Cycles through the same palette used for
+ * countries, just indexed differently. Used for the day column's chrome
+ * (accent stripe, day-number chip, focus tint) — never for stop pins/badges,
+ * which stay tied to country so they match the map. */
+export function dayAccentColor(dayIndex: number): string {
+  return PALETTE[dayIndex % PALETTE.length];
+}
+
+/** Blends a "#rrggbb" color with white at the given opacity, for tinted
+ * backgrounds (e.g. a day's focused state) without relying on Tailwind's
+ * static color classes for a runtime-computed color. */
+export function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export function flagEmoji(countryCode?: string): string {
   if (!countryCode || countryCode.length !== 2) return "";
   const codePoints = countryCode

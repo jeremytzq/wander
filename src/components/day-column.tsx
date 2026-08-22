@@ -29,7 +29,12 @@ import { TravelTimeBadge } from "@/components/travel-time-badge";
 import { DayCountryPicker } from "@/components/day-country-picker";
 import { AccommodationCard } from "@/components/accommodation-card";
 import { useItinerary } from "@/store/itinerary-context";
-import { colorForDay, resolveDayCountry } from "@/lib/country-colors";
+import {
+  colorForDay,
+  dayAccentColor,
+  hexToRgba,
+  resolveDayCountry,
+} from "@/lib/country-colors";
 import { describeHoursForDay } from "@/lib/opening-hours";
 import { dayTotal } from "@/lib/budget";
 import { formatCurrency } from "@/lib/currency";
@@ -84,6 +89,7 @@ export function DayColumn({
 
   const dayColor = colorForDay(countryColors, day);
   const dayCountry = resolveDayCountry(day);
+  const accent = dayAccentColor(dayIndex);
   const closedCount = day.stops.filter(
     (s) => describeHoursForDay(s.openingHours, weekday).status === "closed"
   ).length;
@@ -107,20 +113,21 @@ export function DayColumn({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.6 : 1,
+    borderTopColor: accent,
+    backgroundColor: isFocused ? hexToRgba(accent, 0.06) : "white",
+    boxShadow: isFocused ? `0 4px 14px -6px ${hexToRgba(accent, 0.35)}` : undefined,
   };
 
   return (
     <section
       ref={setSortableRef}
       style={style}
-      className={`flex min-h-0 w-72 flex-shrink-0 flex-col rounded-2xl border p-3 transition-colors ${
-        isFocused
-          ? "border-blue-300 bg-blue-50/50 shadow-md shadow-blue-100"
-          : "border-neutral-200 bg-white shadow-sm hover:border-neutral-300"
+      className={`flex min-h-0 w-[85vw] max-w-[320px] flex-shrink-0 snap-center flex-col rounded-2xl border border-t-[3px] border-neutral-200 p-3 transition-colors sm:w-72 ${
+        isFocused ? "shadow-md" : "shadow-sm hover:border-neutral-300"
       }`}
     >
       <header className="mb-2.5 flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-0.5">
+        <div className="flex min-w-0 items-center gap-1.5">
           {!readOnly && (
             <button
               type="button"
@@ -132,6 +139,12 @@ export function DayColumn({
               <GripVertical className="h-4 w-4" />
             </button>
           )}
+          <span
+            style={{ backgroundColor: accent }}
+            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white shadow-sm"
+          >
+            {dayIndex + 1}
+          </span>
           {editingLabel ? (
             <input
               autoFocus
@@ -166,9 +179,10 @@ export function DayColumn({
           <button
             type="button"
             onClick={() => dispatch({ type: "SET_FOCUSED_DAY", dayId: day.id })}
+            style={isFocused ? { backgroundColor: accent } : undefined}
             className={`flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-colors ${
               isFocused
-                ? "bg-blue-600 text-white shadow-sm"
+                ? "text-white shadow-sm"
                 : "bg-neutral-100 text-neutral-500 hover:bg-neutral-200"
             }`}
           >

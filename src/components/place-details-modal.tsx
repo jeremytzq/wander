@@ -43,7 +43,7 @@ export function PlaceDetailsModal({
         className="fixed inset-0 z-40 cursor-default bg-black/30"
         onClick={onClose}
       />
-      <div className="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-full max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-neutral-200 bg-white shadow-xl">
+      <div className="fixed left-1/2 top-1/2 z-50 max-h-[85vh] w-[92vw] max-w-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-neutral-200 bg-white shadow-xl">
         <div className="relative">
           {place.photoUrl && !imgError ? (
             // eslint-disable-next-line @next/next/no-img-element
