@@ -1,54 +1,49 @@
 import "server-only";
-import { Redis } from "@upstash/redis";
+import type { Prisma } from "@/generated/prisma/client";
 import { Itinerary } from "@/types/itinerary";
-
-const KEY_PREFIX = "wander:user:";
-
-let client: Redis | null | undefined;
-
-function getClient(): Redis | null {
-  if (client !== undefined) return client;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  client = url && token ? new Redis({ url, token }) : null;
-  return client;
-}
+import { getPrisma } from "@/lib/prisma";
 
 export function isAccountStoreConfigured(): boolean {
-  return getClient() !== null;
-}
-
-function userKey(userId: string): string {
-  return `${KEY_PREFIX}${userId}:itineraries`;
+  return getPrisma() !== null;
 }
 
 /** All of a signed-in user's itineraries, newest-edited first. */
 export async function listUserItineraries(userId: string): Promise<Itinerary[]> {
-  const redis = getClient();
-  if (!redis) return [];
-  const map = await redis.hgetall<Record<string, Itinerary>>(userKey(userId));
-  if (!map) return [];
-  return Object.values(map).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  const prisma = getPrisma();
+  if (!prisma) return [];
+  const rows = await prisma.itinerary.findMany({
+    where: { ownerId: userId },
+    orderBy: { updatedAt: "desc" },
+  });
+  return rows.map((row) => row.data as unknown as Itinerary);
 }
 
 export async function saveUserItinerary(
   userId: string,
   itinerary: Itinerary
 ): Promise<void> {
-  const redis = getClient();
-  if (!redis) {
-    throw new Error(
-      "Account store is not configured (missing UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN)."
-    );
+  const prisma = getPrisma();
+  if (!prisma) {
+    throw new Error("Account store is not configured (missing DATABASE_URL).");
   }
-  await redis.hset(userKey(userId), { [itinerary.id]: itinerary });
+  const data = itinerary as unknown as Prisma.InputJsonValue;
+  await prisma.itinerary.upsert({
+    where: { id: itinerary.id },
+    update: { data, ownerId: userId },
+    create: { id: itinerary.id, ownerId: userId, data },
+  });
 }
 
 export async function deleteUserItinerary(
   userId: string,
   itineraryId: string
 ): Promise<void> {
-  const redis = getClient();
-  if (!redis) return;
-  await redis.hdel(userKey(userId), itineraryId);
+  const prisma = getPrisma();
+  if (!prisma) return;
+  // Compound where (id + ownerId) so this can never delete another user's
+  // itinerary even if the id were guessed — same safety property the old
+  // per-user Redis hash had structurally.
+  await prisma.itinerary.deleteMany({
+    where: { id: itineraryId, ownerId: userId },
+  });
 }

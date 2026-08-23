@@ -18,12 +18,13 @@ and save or share the finished plan.
   shown between consecutive stops.
 - **Save & share** — itineraries autosave to `localStorage`; "Copy share
   link" creates a short `/s/[id]` link (itinerary stored server-side in
-  Redis) anyone can open read-only, with a "Save a copy to edit" option. If
-  Redis isn't configured, it falls back to a longer self-contained link
-  instead of failing.
+  Postgres) anyone can open read-only, with a "Save a copy to edit" option.
+  If Postgres isn't configured, it falls back to a longer self-contained
+  link instead of failing.
 - **Account sync (optional)** — "Sign in" with Google to save itineraries to
-  your account (Redis-backed) instead of just this browser's `localStorage`,
-  so "My trips" is the same list on any browser/device you sign into.
+  your account (Postgres-backed) instead of just this browser's
+  `localStorage`, so "My trips" is the same list on any browser/device you
+  sign into.
 - **Generate with AI (optional)** — describe a destination, trip length, and
   interests; Claude plans a day-by-day draft, and every suggested place is
   resolved to a real Google Places result (address, coordinates, photo,
@@ -59,18 +60,32 @@ and save or share the finished plan.
    (`NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` is optional, only needed for custom
    cloud-based map styling.)
 
-4. (Optional, for short share links) Create a free Redis database at
-   [console.upstash.com](https://console.upstash.com), then copy its REST
-   URL and token into `.env.local`:
+4. (Optional, for short share links + account sync) Create a Postgres
+   database — [Neon](https://neon.tech) and
+   [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres) both
+   have a free tier and work well here. Add its connection string(s) to
+   `.env.local`:
 
    ```
-   UPSTASH_REDIS_REST_URL=your-db-rest-url
-   UPSTASH_REDIS_REST_TOKEN=your-db-rest-token
+   DATABASE_URL=your-connection-string
+   DIRECT_URL=your-non-pooled-connection-string
+   ```
+
+   `DIRECT_URL` is only needed if your provider gives you a separate pooled
+   (pgbouncer) connection string for `DATABASE_URL` — Neon and Vercel
+   Postgres both do. It's used only by the Prisma CLI to run migrations;
+   the app itself always connects via `DATABASE_URL`. If your provider only
+   gives you one connection string, leave `DIRECT_URL` unset.
+
+   Then create the tables:
+
+   ```bash
+   npx prisma migrate deploy
    ```
 
    Without this, "Copy share link" still works — it just produces a longer
    link that encodes the itinerary directly in the URL instead of a short
-   `/s/[id]` one.
+   `/s/[id]` one — and account sync (below) is simply unavailable.
 
 5. (Optional, for "Sign in" / cross-device sync) Create a Google OAuth 2.0
    Client ID at
@@ -83,8 +98,8 @@ and save or share the finished plan.
    https://your-deployed-domain/api/auth/callback/google
    ```
 
-   Then add to `.env.local` (also requires the Upstash setup in step 4 —
-   account sync reuses the same Redis database):
+   Then add to `.env.local` (also requires the Postgres setup in step 4 —
+   account sync reuses the same database):
 
    ```
    AUTH_GOOGLE_ID=your-client-id
@@ -97,7 +112,19 @@ and save or share the finished plan.
    these set will show Google's own "invalid client" error page rather than
    failing inside the app.
 
-6. (Optional, for "Generate with AI") Get an
+6. (Optional, for rate limiting on the API routes) Create a free Redis
+   database at [console.upstash.com](https://console.upstash.com), then
+   copy its REST URL and token into `.env.local`:
+
+   ```
+   UPSTASH_REDIS_REST_URL=your-db-rest-url
+   UPSTASH_REDIS_REST_TOKEN=your-db-rest-token
+   ```
+
+   Without this, the API routes have no rate limiting (everything still
+   works, just with no abuse protection) — see `lib/rate-limit.ts`.
+
+7. (Optional, for "Generate with AI") Get an
    [Anthropic API key](https://console.anthropic.com), and create a
    **second, separate** Google Maps API key with no HTTP-referrer
    restriction (server requests have no referrer) and its "API
@@ -115,7 +142,7 @@ and save or share the finished plan.
    `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, an unrestricted key would be usable by
    anyone who could read it out of a page).
 
-7. Run the dev server:
+8. Run the dev server:
 
    ```bash
    npm run dev
@@ -127,6 +154,8 @@ and save or share the finished plan.
 ## Project structure
 
 ```
+prisma/schema.prisma          Itinerary + ShareLink table definitions
+prisma/migrations/            SQL migrations (run via `prisma migrate deploy`)
 src/
   app/page.tsx                 entry point (client-only shell, no SSR)
   app/s/[id]/page.tsx          server-rendered read-only view for a short share link
@@ -141,10 +170,11 @@ src/
   components/map/              low-level map building blocks (marker, route)
   store/itinerary-context.tsx  itinerary state (reducer) + autosave + load
   lib/storage.ts               localStorage persistence + client-side share encoding
-  lib/share-store.ts           server-only Redis read/write for short share links
+  lib/prisma.ts                server-only Postgres/Prisma client (null if DATABASE_URL unset)
+  lib/share-store.ts           server-only Postgres read/write for short share links
   auth.ts                      Auth.js config (Google sign-in, JWT sessions)
   app/api/itineraries/         GET/POST/DELETE: signed-in user's account itineraries
-  lib/user-itineraries-store.ts server-only Redis read/write for account itineraries
+  lib/user-itineraries-store.ts server-only Postgres read/write for account itineraries
   lib/account-sync.ts          client-side fetch wrappers for the itineraries API
   components/account-sync.tsx  headless: debounced save of the active itinerary to the account
   lib/ai/generate-itinerary.ts server-only: Claude plans the trip, then grounds it in real places
@@ -157,10 +187,10 @@ src/
 
 ## Notes / next steps
 
-- Short links (`/s/[id]`) currently never expire until Redis's TTL (~1 year,
-  see `SHARE_TTL_SECONDS` in `lib/share-store.ts`) and have no auth — anyone
-  with the id can view the trip. Fine for casual sharing; add access control
-  if that's ever a concern.
+- Short links (`/s/[id]`) never expire (no TTL — Postgres rows persist
+  until deleted) and have no auth — anyone with the id can view the trip.
+  Fine for casual sharing; add a cleanup job or access control if that's
+  ever a concern.
 - Travel time currently uses driving directions. Walking/transit mode
   toggles would be a straightforward addition (`travelMode` on the
   Directions request in `components/map/day-route.tsx`).
