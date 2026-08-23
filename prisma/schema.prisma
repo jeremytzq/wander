@@ -13,10 +13,10 @@ datasource db {
 // A user's saved trip. `data` holds the full Itinerary JSON (days, stops,
 // accommodation, etc. — see src/types/itinerary.ts) exactly as the client
 // sends it; this table adds the relational bits Redis couldn't give us
-// cheaply (querying "all trips owned by this user", and — once
-// collaboration ships — a place to hang a Collaborator table off this same
-// id). `id` is the itinerary's own client-generated UUID, not a surrogate
-// key, so it stays stable across this migration.
+// cheaply (querying "all trips owned by this user", and the Collaborator/
+// InviteLink tables below hanging off this same id). `id` is the
+// itinerary's own client-generated UUID, not a surrogate key, so it stays
+// stable across the Redis migration.
 model Itinerary {
   id        String   @id
   ownerId   String
@@ -24,7 +24,39 @@ model Itinerary {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  collaborators Collaborator[]
+  inviteLinks   InviteLink[]
+
   @@index([ownerId])
+}
+
+// Grants a user (not the owner — ownership is Itinerary.ownerId) access to
+// an itinerary. "editor" can edit everything the owner can except deleting
+// the trip itself; "viewer" gets the existing read-only experience.
+model Collaborator {
+  itineraryId String
+  userId      String
+  role        String // "editor" | "viewer"
+  createdAt   DateTime @default(now())
+
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+
+  @@id([itineraryId, userId])
+  @@index([userId])
+}
+
+// A shareable "join this trip" link. Opening it while signed in grants the
+// stated role via a new Collaborator row — distinct from ShareLink below,
+// which is a frozen read-only snapshot rather than live access to the trip.
+model InviteLink {
+  id          String   @id
+  itineraryId String
+  role        String // "editor" | "viewer"
+  createdAt   DateTime @default(now())
+
+  itinerary Itinerary @relation(fields: [itineraryId], references: [id], onDelete: Cascade)
+
+  @@index([itineraryId])
 }
 
 // A snapshot behind a short /s/[id] link, decoupled from the live trip

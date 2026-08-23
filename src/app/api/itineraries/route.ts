@@ -101,7 +101,10 @@ export async function POST(request: NextRequest) {
 
   try {
     await saveUserItinerary(session.user.id, itinerary);
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith("Not authorized")) {
+      return NextResponse.json({ error: err.message }, { status: 403 });
+    }
     return NextResponse.json(
       { error: "Failed to save the itinerary." },
       { status: 500 }

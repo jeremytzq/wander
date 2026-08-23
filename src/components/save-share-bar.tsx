@@ -16,18 +16,21 @@ import {
   Plus,
   Sparkles,
   UserRound,
+  Users,
   Wallet,
   X,
 } from "lucide-react";
 import { useItinerary } from "@/store/itinerary-context";
-import { Itinerary, createEmptyItinerary } from "@/types/itinerary";
+import { createEmptyItinerary } from "@/types/itinerary";
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from "@/lib/currency";
 import { createShareLink, deleteItinerary, listItineraries } from "@/lib/storage";
 import {
+  OwnedOrSharedItinerary,
   deleteAccountItinerary,
   fetchAccountItineraries,
 } from "@/lib/account-sync";
 import { GenerateItineraryModal } from "@/components/generate-itinerary-modal";
+import { InviteModal } from "@/components/invite-modal";
 import type { ViewMode } from "@/components/app-shell";
 
 interface SaveShareBarProps {
@@ -40,15 +43,20 @@ export function SaveShareBar({ viewMode, onViewModeChange }: SaveShareBarProps) 
   const { data: session, status: sessionStatus } = useSession();
   const isSignedIn = sessionStatus === "authenticated";
   const [showGenerate, setShowGenerate] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
   const [showTrips, setShowTrips] = useState(false);
   const [showAccount, setShowAccount] = useState(false);
-  const [trips, setTrips] = useState<Itinerary[]>([]);
+  const [trips, setTrips] = useState<OwnedOrSharedItinerary[]>([]);
   const [shareState, setShareState] = useState<"idle" | "working" | "copied">(
     "idle"
   );
 
   async function refreshTrips() {
-    setTrips(isSignedIn ? await fetchAccountItineraries() : listItineraries());
+    if (isSignedIn) {
+      setTrips(await fetchAccountItineraries());
+    } else {
+      setTrips(listItineraries().map((it) => ({ itinerary: it, role: "owner" as const })));
+    }
   }
 
   async function handleShare() {
@@ -70,8 +78,12 @@ export function SaveShareBar({ viewMode, onViewModeChange }: SaveShareBarProps) 
     window.history.replaceState(null, "", "/");
   }
 
-  function handleOpenTrip(t: Itinerary) {
-    dispatch({ type: "SET_ITINERARY", itinerary: t });
+  function handleOpenTrip(entry: OwnedOrSharedItinerary) {
+    dispatch({
+      type: "SET_ITINERARY",
+      itinerary: entry.itinerary,
+      readOnly: entry.role === "viewer",
+    });
     setShowTrips(false);
   }
 
@@ -221,22 +233,29 @@ export function SaveShareBar({ viewMode, onViewModeChange }: SaveShareBarProps) 
                       No saved trips yet.
                     </p>
                   )}
-                  {trips.map((t) => (
+                  {trips.map(({ itinerary: t, role }) => (
                     <div
                       key={t.id}
-                      onClick={() => handleOpenTrip(t)}
-                      className="flex cursor-pointer items-center justify-between rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-neutral-50"
+                      onClick={() => handleOpenTrip({ itinerary: t, role })}
+                      className="flex cursor-pointer items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors hover:bg-neutral-50"
                     >
-                      <span className="truncate text-neutral-700">
+                      <span className="min-w-0 flex-1 truncate text-neutral-700">
                         {t.name}
                       </span>
-                      <button
-                        onClick={(e) => handleDeleteTrip(t.id, e)}
-                        className="flex-shrink-0 rounded p-0.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                        aria-label="Delete trip"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
+                      {role !== "owner" && (
+                        <span className="flex-shrink-0 rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium capitalize text-neutral-500">
+                          {role}
+                        </span>
+                      )}
+                      {role === "owner" && (
+                        <button
+                          onClick={(e) => handleDeleteTrip(t.id, e)}
+                          className="flex-shrink-0 rounded p-0.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                          aria-label="Delete trip"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -261,11 +280,28 @@ export function SaveShareBar({ viewMode, onViewModeChange }: SaveShareBarProps) 
             <Sparkles className="h-3.5 w-3.5 text-violet-500" />
             <span className="hidden md:inline">Generate with AI</span>
           </button>
+
+          {isSignedIn && (
+            <button
+              onClick={() => setShowInvite(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-neutral-200 px-2.5 py-1 text-sm text-neutral-700 transition-colors hover:border-neutral-300 hover:bg-neutral-50"
+            >
+              <Users className="h-3.5 w-3.5 text-neutral-400" />
+              <span className="hidden md:inline">Invite</span>
+            </button>
+          )}
         </>
       )}
 
       {showGenerate && (
         <GenerateItineraryModal onClose={() => setShowGenerate(false)} />
+      )}
+
+      {showInvite && (
+        <InviteModal
+          itineraryId={itinerary.id}
+          onClose={() => setShowInvite(false)}
+        />
       )}
 
       {isSignedIn ? (

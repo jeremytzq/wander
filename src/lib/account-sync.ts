@@ -1,12 +1,21 @@
 import { Itinerary } from "@/types/itinerary";
+import { AccessRole } from "@/lib/user-itineraries-store";
+
+export interface OwnedOrSharedItinerary {
+  itinerary: Itinerary;
+  role: AccessRole;
+}
 
 /** Itineraries saved to the signed-in user's account (server-side, not this
- * browser's localStorage) — available from any browser/device. */
-export async function fetchAccountItineraries(): Promise<Itinerary[]> {
+ * browser's localStorage) — available from any browser/device. Includes
+ * trips shared with them as a collaborator, alongside their role on each. */
+export async function fetchAccountItineraries(): Promise<OwnedOrSharedItinerary[]> {
   try {
     const res = await fetch("/api/itineraries");
     if (!res.ok) return [];
-    const { itineraries } = (await res.json()) as { itineraries: Itinerary[] };
+    const { itineraries } = (await res.json()) as {
+      itineraries: OwnedOrSharedItinerary[];
+    };
     return itineraries;
   } catch {
     return [];
