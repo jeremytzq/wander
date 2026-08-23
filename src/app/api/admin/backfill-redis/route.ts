@@ -17,11 +17,11 @@ import { Itinerary } from "@/types/itinerary";
 // either):
 //
 //   curl -X POST https://<your-domain>/api/admin/backfill-redis \
-//     -H "x-migration-secret: $AUTH_SECRET"
+//     -H "x-migration-secret: $MIGRATION_SECRET"
 //
-// Gated behind AUTH_SECRET (already set, no new env var needed) purely so
-// this can't be triggered by anyone who stumbles on the URL — it has
-// nothing to do with sessions here.
+// Gated behind a dedicated MIGRATION_SECRET env var (set it in Vercel ->
+// Settings -> Environment Variables, checking Production) purely so this
+// can't be triggered by anyone who stumbles on the URL.
 
 const SHARE_KEY_PREFIX = "wander:share:";
 const USER_KEY_PREFIX = "wander:user:";
@@ -50,9 +50,15 @@ async function scanAllKeys(redis: Redis, pattern: string): Promise<string[]> {
 
 export async function POST(request: NextRequest) {
   const providedSecret = request.headers.get("x-migration-secret");
-  const expectedSecret = process.env.AUTH_SECRET;
+  const expectedSecret = process.env.MIGRATION_SECRET;
   if (!expectedSecret || providedSecret !== expectedSecret) {
-    return NextResponse.json({ error: "Not authorized." }, { status: 401 });
+    // Doesn't leak the secret's value — just whether the env var reached
+    // this deployment at all, since that's the failure mode that's easy to
+    // mistake for "wrong secret" when it's actually "not set here yet".
+    return NextResponse.json(
+      { error: "Not authorized.", secretConfiguredOnServer: !!expectedSecret },
+      { status: 401 }
+    );
   }
 
   const redis = getRedis();
