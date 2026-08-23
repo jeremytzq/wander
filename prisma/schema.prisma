@@ -1,0 +1,37 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// A user's saved trip. `data` holds the full Itinerary JSON (days, stops,
+// accommodation, etc. — see src/types/itinerary.ts) exactly as the client
+// sends it; this table adds the relational bits Redis couldn't give us
+// cheaply (querying "all trips owned by this user", and — once
+// collaboration ships — a place to hang a Collaborator table off this same
+// id). `id` is the itinerary's own client-generated UUID, not a surrogate
+// key, so it stays stable across this migration.
+model Itinerary {
+  id        String   @id
+  ownerId   String
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+// A snapshot behind a short /s/[id] link, decoupled from the live trip
+// (matches the pre-existing Redis behavior: sharing again creates a new
+// link with a fresh snapshot rather than updating the old one).
+model ShareLink {
+  id        String   @id
+  data      Json
+  createdAt DateTime @default(now())
+}
