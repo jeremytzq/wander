@@ -72,6 +72,28 @@ export async function saveUserItinerary(
   });
 }
 
+/** Resolves what access (if any) `userId` has to `itineraryId` — "owner",
+ * their collaborator role, or null if they have no access (or the itinerary
+ * doesn't exist). Used to gate the realtime-sync auth endpoint. */
+export async function getAccessRole(
+  userId: string,
+  itineraryId: string
+): Promise<AccessRole | null> {
+  const prisma = getPrisma();
+  if (!prisma) return null;
+  const itinerary = await prisma.itinerary.findUnique({
+    where: { id: itineraryId },
+    select: {
+      ownerId: true,
+      collaborators: { where: { userId } },
+    },
+  });
+  if (!itinerary) return null;
+  if (itinerary.ownerId === userId) return "owner";
+  const collaborator = itinerary.collaborators[0];
+  return collaborator ? (collaborator.role as CollaboratorRole) : null;
+}
+
 /** Owner-only: deletes the itinerary outright (and, via cascade, its
  * collaborators/invite links). No-ops if `userId` isn't the owner — same
  * safety property the old per-user Redis hash had structurally. */

@@ -2,10 +2,12 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
   useReducer,
+  useRef,
 } from "react";
 import {
   Itinerary,
@@ -21,15 +23,15 @@ import {
   saveItinerary,
 } from "@/lib/storage";
 
-type Action =
+export type Action =
   | { type: "SET_ITINERARY"; itinerary: Itinerary; readOnly?: boolean }
   | { type: "TAKE_OWNERSHIP" }
   | { type: "RENAME_ITINERARY"; name: string }
-  | { type: "ADD_DAY" }
+  | { type: "ADD_DAY"; dayId: string }
   | { type: "REMOVE_DAY"; dayId: string }
   | { type: "REORDER_DAYS"; dayIds: string[] }
   | { type: "RENAME_DAY"; dayId: string; label: string }
-  | { type: "ADD_STOP"; dayId: string; place: Omit<PlaceStop, "id"> }
+  | { type: "ADD_STOP"; dayId: string; place: Omit<PlaceStop, "id">; stopId: string }
   | { type: "REMOVE_STOP"; dayId: string; stopId: string }
   | { type: "REORDER_STOPS"; dayId: string; stopIds: string[] }
   | {
@@ -60,6 +62,7 @@ type Action =
       type: "SET_DAY_ACCOMMODATION";
       dayId: string;
       accommodation: Omit<PlaceStop, "id"> | null;
+      accommodationId?: string;
     };
 
 interface State {
@@ -102,7 +105,7 @@ function reducer(state: State, action: Action): State {
       };
     case "ADD_DAY": {
       const day: ItineraryDay = {
-        id: crypto.randomUUID(),
+        id: action.dayId,
         label: `Day ${state.itinerary.days.length + 1}`,
         stops: [],
       };
@@ -152,7 +155,7 @@ function reducer(state: State, action: Action): State {
           ? {
               ...d,
               accommodation: action.accommodation
-                ? { id: crypto.randomUUID(), ...action.accommodation }
+                ? { id: action.accommodationId ?? crypto.randomUUID(), ...action.accommodation }
                 : undefined,
             }
           : d
@@ -166,7 +169,7 @@ function reducer(state: State, action: Action): State {
       return { ...state, itinerary: touch({ ...state.itinerary, days }) };
     }
     case "ADD_STOP": {
-      const stop: PlaceStop = { id: crypto.randomUUID(), ...action.place };
+      const stop: PlaceStop = { id: action.stopId, ...action.place };
       const days = state.itinerary.days.map((d) =>
         d.id === action.dayId ? { ...d, stops: [...d.stops, stop] } : d
       );
@@ -276,6 +279,10 @@ function reducer(state: State, action: Action): State {
 
 interface ItineraryContextValue extends State {
   dispatch: React.Dispatch<Action>;
+  /** Registers a listener called synchronously with every dispatched action
+   * (regardless of type) — used by the realtime-sync layer to relay local
+   * edits to collaborators. Returns an unsubscribe function. */
+  subscribeToActions: (listener: (action: Action) => void) => () => void;
 }
 
 const ItineraryContext = createContext<ItineraryContextValue | null>(null);
@@ -344,7 +351,22 @@ export function ItineraryProvider({
     saveItinerary(state.itinerary);
   }, [state.itinerary, state.readOnly]);
 
-  const value = useMemo(() => ({ ...state, dispatch }), [state]);
+  const listenersRef = useRef(new Set<(action: Action) => void>());
+
+  const dispatchAndNotify = useCallback<React.Dispatch<Action>>((action) => {
+    dispatch(action);
+    listenersRef.current.forEach((listener) => listener(action));
+  }, []);
+
+  const subscribeToActions = useCallback((listener: (action: Action) => void) => {
+    listenersRef.current.add(listener);
+    return () => listenersRef.current.delete(listener);
+  }, []);
+
+  const value = useMemo(
+    () => ({ ...state, dispatch: dispatchAndNotify, subscribeToActions }),
+    [state, dispatchAndNotify, subscribeToActions]
+  );
 
   return (
     <ItineraryContext.Provider value={value}>

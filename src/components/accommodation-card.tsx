@@ -43,6 +43,7 @@ export function AccommodationCard({ day, weekday, currency, readOnly }: Accommod
       type: "SET_DAY_ACCOMMODATION",
       dayId: day.id,
       accommodation: place,
+      accommodationId: crypto.randomUUID(),
     });
     setOpen(false);
   }

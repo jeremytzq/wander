@@ -60,7 +60,12 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
       );
       const targetDay = itinerary.days[targetDayIndex];
       if (!targetDay) return;
-      dispatch({ type: "ADD_STOP", dayId: targetDay.id, place });
+      dispatch({
+        type: "ADD_STOP",
+        dayId: targetDay.id,
+        place,
+        stopId: crypto.randomUUID(),
+      });
 
       const weekday = addDaysToDateString(
         itinerary.startDate,
@@ -231,7 +236,9 @@ export function ItineraryPanel({ legs }: ItineraryPanelProps) {
           {!readOnly && (
             <button
               type="button"
-              onClick={() => dispatch({ type: "ADD_DAY" })}
+              onClick={() =>
+                dispatch({ type: "ADD_DAY", dayId: crypto.randomUUID() })
+              }
               className="flex w-24 flex-shrink-0 snap-center flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-neutral-200 text-sm text-neutral-400 transition-colors hover:border-blue-300 hover:bg-blue-50/50 hover:text-blue-600"
             >
               <Plus className="h-4 w-4" />

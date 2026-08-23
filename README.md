@@ -142,7 +142,20 @@ and save or share the finished plan.
    `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, an unrestricted key would be usable by
    anyone who could read it out of a page).
 
-8. Run the dev server:
+8. (Optional, for live realtime collaboration) Create a free project at
+   [liveblocks.io](https://liveblocks.io/dashboard), then copy its secret
+   key (starts with `sk_`) into `.env.local`:
+
+   ```
+   LIVEBLOCKS_SECRET_KEY=your-liveblocks-secret-key
+   ```
+
+   Requires the Postgres setup in step 4 (collaborators/invite links need
+   somewhere to be stored). Without this, sharing and collaborator invites
+   still work exactly as before — collaborators just need to refresh to see
+   each other's edits, instead of seeing them live.
+
+9. Run the dev server:
 
    ```bash
    npm run dev

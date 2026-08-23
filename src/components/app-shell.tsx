@@ -5,6 +5,7 @@ import { List, Map as MapIcon } from "lucide-react";
 import { ItineraryProvider } from "@/store/itinerary-context";
 import { GoogleMapsProvider } from "@/components/map/google-maps-provider";
 import { AccountSync } from "@/components/account-sync";
+import { RealtimeSync } from "@/components/realtime-sync";
 import { SaveShareBar } from "@/components/save-share-bar";
 import { ItineraryPanel } from "@/components/itinerary-panel";
 import { CalendarView } from "@/components/calendar-view";
@@ -32,6 +33,7 @@ export function AppShell({ initialItinerary, initialReadOnly }: AppShellProps) {
     >
       <GoogleMapsProvider>
         <AccountSync />
+        <RealtimeSync />
         <div className="flex h-dvh flex-col bg-neutral-50">
           <SaveShareBar viewMode={viewMode} onViewModeChange={setViewMode} />
 
