@@ -68,7 +68,7 @@ export function AccommodationCard({ day, weekday, currency, readOnly }: Accommod
             onClick={() => setShowDetails(true)}
             className="block w-full text-left"
           >
-            <p className="break-words text-sm font-medium leading-snug text-neutral-900 underline decoration-indigo-200 decoration-dotted underline-offset-2 hover:text-indigo-700 hover:decoration-indigo-400">
+            <p className="break-words text-xs font-medium leading-snug text-neutral-900 underline decoration-indigo-200 decoration-dotted underline-offset-2 hover:text-indigo-700 hover:decoration-indigo-400">
               {stay.name}
             </p>
           </button>

@@ -101,7 +101,7 @@ export function StopCard({
           onClick={() => setShowDetails(true)}
           className="block w-full text-left"
         >
-          <p className="break-words text-sm font-medium leading-snug text-neutral-900 underline decoration-neutral-200 decoration-dotted underline-offset-2 hover:text-blue-700 hover:decoration-blue-300">
+          <p className="break-words text-xs font-medium leading-snug text-neutral-900 underline decoration-neutral-200 decoration-dotted underline-offset-2 hover:text-blue-700 hover:decoration-blue-300">
             {stop.name}
           </p>
         </button>
