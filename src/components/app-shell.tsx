@@ -41,12 +41,12 @@ export function AppShell({ initialItinerary, initialReadOnly }: AppShellProps) {
               between — a fixed vertical split leaves too little room for
               either on a phone. From sm up both are always shown, so this
               toggle is hidden entirely. */}
-          <div className="flex flex-shrink-0 justify-center border-b border-neutral-200 bg-white py-1.5 sm:hidden">
+          <div className="flex flex-shrink-0 justify-center border-b border-neutral-200 bg-white py-1 sm:hidden">
             <div className="inline-flex items-center gap-0.5 rounded-full bg-neutral-100 p-0.5">
               <button
                 type="button"
                 onClick={() => setMobilePane("itinerary")}
-                className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                className={`flex items-center gap-1 rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${
                   mobilePane === "itinerary"
                     ? "bg-white text-neutral-800 shadow-sm"
                     : "text-neutral-500"
@@ -58,7 +58,7 @@ export function AppShell({ initialItinerary, initialReadOnly }: AppShellProps) {
               <button
                 type="button"
                 onClick={() => setMobilePane("map")}
-                className={`flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                className={`flex items-center gap-1 rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${
                   mobilePane === "map"
                     ? "bg-white text-neutral-800 shadow-sm"
                     : "text-neutral-500"
@@ -71,7 +71,7 @@ export function AppShell({ initialItinerary, initialReadOnly }: AppShellProps) {
           </div>
 
           <section
-            className={`${mobilePane === "map" ? "hidden" : "flex"} min-h-0 flex-[2] flex-col border-b border-neutral-200 bg-white/70 p-3 shadow-sm backdrop-blur-sm sm:flex`}
+            className={`${mobilePane === "map" ? "hidden" : "flex"} min-h-0 flex-[2] flex-col border-b border-neutral-200 bg-white/70 p-2 shadow-sm backdrop-blur-sm sm:flex sm:p-3`}
           >
             {viewMode === "board" ? (
               <ItineraryPanel legs={legs} />
