@@ -153,10 +153,7 @@ function MapContent({ onLegsChange }: MapViewProps) {
           )
       )}
       {focusedDay && (
-        <DayRoute
-          stops={startPoint ? [startPoint, ...focusedDay.stops] : focusedDay.stops}
-          onLegsChange={onLegsChange}
-        />
+        <DayRoute stops={focusedDayStops} onLegsChange={onLegsChange} />
       )}
       {selected && (
         <InfoWindow

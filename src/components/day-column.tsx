@@ -118,6 +118,11 @@ export function DayColumn({
   // startPoint when this day is focused, so leg 0 is startPoint→stops[0]
   // and every inter-stop leg shifts up by one.
   const legOffset = isFocused && startPoint ? 1 : 0;
+  // The route also ends at this day's own accommodation when set, so the
+  // final leg (last stop → accommodation) sits right after the inter-stop
+  // legs — same indexing rule as the loop below, just for index = stops.length - 1.
+  const accommodationLegIndex = day.stops.length - 1 + legOffset;
+  const showAccommodationLeg = !!day.accommodation && (day.stops.length > 0 || !!startPoint);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -343,6 +348,11 @@ export function DayColumn({
             </SortableContext>
           </div>
 
+          <div className="flex-shrink-0">
+            {showAccommodationLeg && (
+              <TravelTimeBadge leg={isFocused ? legs[accommodationLegIndex] : undefined} />
+            )}
+          </div>
           <div className="mt-2 flex-shrink-0">
             <AccommodationCard
               day={day}
