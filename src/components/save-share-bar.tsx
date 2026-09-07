@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn, signOut, useSession } from "next-auth/react";
 import {
+  AlertTriangle,
   Calendar,
   CalendarDays,
   Check,
@@ -15,6 +16,7 @@ import {
   Loader2,
   MoreHorizontal,
   Plus,
+  Save,
   Sparkles,
   UserRound,
   Users,
@@ -29,6 +31,7 @@ import {
   OwnedOrSharedItinerary,
   deleteAccountItinerary,
   fetchAccountItineraries,
+  saveAccountItinerary,
 } from "@/lib/account-sync";
 import { GenerateItineraryModal } from "@/components/generate-itinerary-modal";
 import { InviteModal } from "@/components/invite-modal";
@@ -52,6 +55,9 @@ export function SaveShareBar({ viewMode, onViewModeChange }: SaveShareBarProps) 
   const [shareState, setShareState] = useState<"idle" | "working" | "copied">(
     "idle"
   );
+  const [saveState, setSaveState] = useState<"idle" | "working" | "saved" | "error">(
+    "idle"
+  );
 
   async function refreshTrips() {
     if (isSignedIn) {
@@ -67,6 +73,23 @@ export function SaveShareBar({ viewMode, onViewModeChange }: SaveShareBarProps) 
     await navigator.clipboard.writeText(url);
     setShareState("copied");
     setTimeout(() => setShareState("idle"), 2000);
+  }
+
+  // Autosave already mirrors every edit to the account a couple seconds
+  // after you stop typing (see AccountSync) — this button is for an
+  // immediate, visible confirmation that this exact trip (same id/name) is
+  // saved under your account, so it's the one you'll see signing in on
+  // another device. Not signed in yet? There's nowhere "online" to save
+  // to, so send them to sign in first instead of silently no-op-ing.
+  async function handleSaveNow() {
+    if (!isSignedIn) {
+      signIn("google");
+      return;
+    }
+    setSaveState("working");
+    const ok = await saveAccountItinerary(itinerary);
+    setSaveState(ok ? "saved" : "error");
+    setTimeout(() => setSaveState("idle"), 2500);
   }
 
   function handleNewTrip() {
@@ -335,6 +358,46 @@ export function SaveShareBar({ viewMode, onViewModeChange }: SaveShareBarProps) 
     </button>
   );
 
+  const saveButton = !readOnly && (
+    <button
+      onClick={handleSaveNow}
+      disabled={saveState === "working"}
+      title={
+        isSignedIn
+          ? "Save to your account so it's there when you sign in on another device"
+          : "Sign in to save this trip to your account"
+      }
+      className={`flex flex-shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1 text-sm font-medium transition-colors disabled:opacity-60 ${
+        saveState === "error"
+          ? "border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+          : saveState === "saved"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+            : "border-neutral-200 text-neutral-700 hover:border-neutral-300 hover:bg-neutral-50"
+      }`}
+    >
+      {saveState === "working" ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : saveState === "saved" ? (
+        <Check className="h-3.5 w-3.5" />
+      ) : saveState === "error" ? (
+        <AlertTriangle className="h-3.5 w-3.5" />
+      ) : (
+        <Save className="h-3.5 w-3.5 text-neutral-400" />
+      )}
+      <span className="hidden sm:inline">
+        {saveState === "working"
+          ? "Saving…"
+          : saveState === "saved"
+            ? "Saved"
+            : saveState === "error"
+              ? "Couldn't save"
+              : isSignedIn
+                ? "Save"
+                : "Sign in to save"}
+      </span>
+    </button>
+  );
+
   const shareButton = (
     <button
       onClick={handleShare}
@@ -401,6 +464,7 @@ export function SaveShareBar({ viewMode, onViewModeChange }: SaveShareBarProps) 
         </div>
 
         {accountControl}
+        {saveButton}
         {shareButton}
       </div>
 
